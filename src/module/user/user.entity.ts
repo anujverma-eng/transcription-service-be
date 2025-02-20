@@ -27,6 +27,9 @@ export class User extends Document {
   @Prop({ default: true })
   isActive: boolean;
 
+  @Prop({ default: false })
+  isBlocked: boolean;
+
   @Prop()
   googleId?: string; // for future Google OAuth
 

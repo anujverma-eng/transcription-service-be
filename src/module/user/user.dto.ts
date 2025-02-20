@@ -46,5 +46,5 @@ export class CreateUserDto {
 
   @IsOptional()
   @IsDateString()
-  lastLogin: Date;
+  lastLogin: Date = new Date();
 }

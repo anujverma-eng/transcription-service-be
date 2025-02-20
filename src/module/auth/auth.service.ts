@@ -1,7 +1,7 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { compare } from "bcrypt";
 import { UserService } from "../user/user.service";
-import { LoginDto } from "./auth.dto";
+import { LoginDto, SignUpDto } from "./auth.dto";
 import { User } from "../user/user.entity";
 import { JwtPayload } from "./types/auth.types";
 import { CreateUserDto } from "../user/user.dto";
@@ -13,7 +13,7 @@ import {
   JWT_REFRESH_EXPIRATION_TIME,
   JWT_SIGN_IN_OPTIONS,
 } from "src/common/constants/constants";
-import { AuthUser } from "./auth.interface";
+import { AuthTokens, AuthUser } from "./auth.interface";
 @Injectable()
 export class AuthService {
   constructor(
@@ -40,7 +40,7 @@ export class AuthService {
    */
   async validateJwtPayload(payload: JwtPayload): Promise<User | null> {
     if (!payload.email) return null;
-    const user = await this.userService.findById(payload.email);
+    const user = await this.userService.findById(payload.userId);
     if (!user || !user.isActive) return null;
     return user;
   }
@@ -48,8 +48,8 @@ export class AuthService {
   /**
    * Sign Up new user + auto-login (return tokens).
    */
-  async signUp(createUserDto: CreateUserDto): Promise<any> {
-    const user = await this.userService.createUser(createUserDto);
+  async signUp(signUpDto: SignUpDto): Promise<AuthTokens> {
+    const user = await this.userService.createUser(signUpDto as CreateUserDto);
     return await this.login(user as AuthUser);
   }
 
@@ -64,7 +64,7 @@ export class AuthService {
       userAgent?: string;
       sessionId?: string;
     },
-  ) {
+  ): Promise<AuthTokens> {
     // 1) Revoke existing refresh tokens for single-device policy
     await this.refreshTokenService.revokeAllRefreshTokensForUser(
       new Types.ObjectId(user._id),
@@ -98,6 +98,66 @@ export class AuthService {
     // 5) Update lastLogin
     await this.userService.updateLastLogin(user._id);
     return { accessToken, refreshToken };
+  }
+
+  /**
+   * Refresh tokens: rotate the refresh token and provide a new access & refresh.
+   * Single-device policy: We revoke the old token doc and create a new one.
+   *  - Verifies that refresh token is valid JWT and not expired.
+   *  - Finds that token in the RefreshToken collection (it must be active).
+   *  - Revokes/deactivates it (rotation).
+   *  - Issues a new access token (short-lived) and a new refresh token (longer-lived).
+   *  - Stores the new refresh token in the DB, so the user stays logged in.
+   */
+  async refreshTheTokens(oldRefreshToken: string) {
+    // 1) Verify the old refresh token’s signature & expiry
+    try {
+      await this.jwtService.verify(oldRefreshToken);
+    } catch (error) {
+      throw new UnauthorizedException("Invalid refresh token", {
+        cause: error,
+      });
+    }
+
+    // 2) Check the RefreshToken DB for a matching active token
+    const tokenDoc =
+      await this.refreshTokenService.findRefreshTokenByToken(oldRefreshToken);
+    if (!tokenDoc) {
+      throw new UnauthorizedException("Refresh token not found or revoked");
+    }
+
+    // 3) Fetch the user
+    const user = await this.userService.findById(tokenDoc.userId);
+    if (!user || user.isBlocked) {
+      // revoke token doc or set isActive=false
+      await this.refreshTokenService.revokeRefreshToken(oldRefreshToken);
+      throw new UnauthorizedException("User not found or blocked");
+    }
+
+    // 4) Generate new tokens
+    const tokens = await this.login(user as AuthUser);
+    return tokens;
+  }
+
+  /**
+   * Logout: revoke the user’s current refresh token so it can’t be used again.
+   */
+  async logout(refreshToken: string, user: AuthUser) {
+    // The user might pass the refresh token from local storage
+    // or from an Authorization header, etc.
+    if (!refreshToken) {
+      throw new UnauthorizedException("No refresh token provided");
+    }
+    const tokenDoc =
+      await this.refreshTokenService.findRefreshTokenByToken(refreshToken);
+
+    if (!tokenDoc || tokenDoc.userId.toString() !== user._id.toString()) {
+      throw new UnauthorizedException("Token does not match user");
+    }
+
+    await this.refreshTokenService.revokeRefreshToken(refreshToken);
+
+    return { message: "Logout successful" };
   }
 
   /**

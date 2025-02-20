@@ -33,16 +33,10 @@ export class RefreshTokenService {
   }
 
   async revokeRefreshToken(token: string): Promise<void> {
-    await this.refreshTokenModel.updateOne(
-      { token },
-      { $set: { isActive: false } },
-    );
+    await this.refreshTokenModel.deleteMany({ token });
   }
 
   async revokeAllRefreshTokensForUser(userId: Types.ObjectId | string) {
-    await this.refreshTokenModel.updateMany(
-      { userId: new Types.ObjectId(userId) },
-      { $set: { isActive: false } },
-    );
+    await this.refreshTokenModel.deleteMany({ userId });
   }
 }

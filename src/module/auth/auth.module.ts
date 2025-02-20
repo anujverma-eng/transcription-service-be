@@ -9,6 +9,7 @@ import { AuthService } from "./auth.service";
 import { LocalStrategy } from "./strategies/local.strategy";
 import { JwtAccessStrategy } from "./strategies/jwt-access.strategy";
 import { JWT_SIGN_IN_OPTIONS } from "src/common/constants/constants";
+import { AuthController } from "./auth.controller";
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { JWT_SIGN_IN_OPTIONS } from "src/common/constants/constants";
       inject: [ConfigService],
     }),
   ],
+  controllers: [AuthController],
   providers: [AuthService, LocalStrategy, JwtAccessStrategy],
   exports: [AuthService],
 })
