@@ -1,10 +1,12 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
   HttpCode,
   HttpStatus,
   Injectable,
+  NotFoundException,
   Post,
   Req,
   Res,
@@ -12,10 +14,12 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { Response } from "express";
+import { Types } from "mongoose";
 import { JwtAuthGuard } from "src/common/guards/jwt-auth.guard";
 import { LocalAuthGuard } from "src/common/guards/local-auth.guard";
 import { RoleGuard } from "src/common/guards/role.guard";
-import { SignUpDto } from "./auth.dto";
+import { UserService } from "../user/user.service";
+import { ResetPasswordDto, SignUpDto } from "./auth.dto";
 import {
   AuthRequest,
   AuthTokens,
@@ -23,11 +27,17 @@ import {
   CookieRequest,
 } from "./auth.interface";
 import { AuthService } from "./auth.service";
+import { setAuthCookies } from "./auth.utilities";
+import { PasswordResetService } from "./password-reset.service";
 
 @Injectable()
 @Controller("/api/v1/auth")
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly userService: UserService,
+    private readonly passwordResetService: PasswordResetService,
+  ) {}
 
   /**
    * SIGN UP + auto login
@@ -61,21 +71,8 @@ export class AuthController {
       },
     );
 
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      sameSite: "strict",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 15 * 60_000, // 15 min
-    });
+    setAuthCookies(res, accessToken, refreshToken);
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      sameSite: "strict",
-      secure: false,
-      maxAge: 7 * 24 * 60_000 * 60, // 7 days
-    });
-
-    // Important: Send the response
     return res.json({ message: "Login successful" });
   }
 
@@ -92,19 +89,9 @@ export class AuthController {
     }
     const { accessToken, refreshToken } =
       await this.authService.refreshTheTokens(oldRefreshToken);
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      sameSite: "strict", // or 'lax' / 'none'
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 15 * 60_000, // 15 min
-    });
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      sameSite: "strict",
-      secure: false,
-      maxAge: 7 * 24 * 60_000 * 60, // 7 days
-    });
+    setAuthCookies(res, accessToken, refreshToken);
+
     return res.json({ message: "Refresh successful" });
   }
 
@@ -128,6 +115,73 @@ export class AuthController {
     res.clearCookie("accessToken");
     res.clearCookie("refreshToken");
     return res.json({ message: "Logout Successfully" });
+  }
+
+  @Post("forgot-password")
+  async forgotPassword(@Body() body: { email: string }) {
+    const { email } = body;
+    const user = await this.userService.findByEmail(email);
+
+    if (!user) {
+      throw new NotFoundException("No user found with that email");
+    }
+
+    const resetToken = await this.passwordResetService.createToken(
+      (user._id as Types.ObjectId).toString(),
+      60,
+    );
+
+    const message =
+      `[Mock Email] To: ${user.email}\nSubject: Password Reset\n` +
+      `Here is your reset token: ${resetToken} (valid 1 hour)\n` +
+      `Or link: http://localhost:3000/api/v1/auth/reset-password?token=${resetToken}`;
+
+    return { message };
+  }
+
+  @Post("reset-password")
+  async resetPassword(@Body() body: ResetPasswordDto, @Res() res: Response) {
+    const { token, newPassword } = body;
+
+    // 1) Look up the reset doc
+    const resetDoc = await this.passwordResetService.findByToken(token);
+    if (!resetDoc) {
+      throw new BadRequestException("Invalid or unknown reset token");
+    }
+    if (resetDoc.used) {
+      throw new BadRequestException("Reset token already used");
+    }
+    // Check expiry
+    if (resetDoc.expiresAt < new Date()) {
+      throw new BadRequestException("Reset token has expired");
+    }
+
+    // 2) Retrieve the user
+    const user = await this.userService.findById(resetDoc.userId);
+    if (!user) {
+      throw new NotFoundException("User no longer exists");
+    }
+
+    // 3) Update password
+    await this.userService.updatePassword(user, newPassword);
+
+    // 4) Mark the token as used
+    await this.passwordResetService.markUsed(token);
+
+    // 5) Auto-login => single-device policy => revoke old refresh tokens
+    // We'll call authService.login(...) to get new access & refresh tokens
+    const { accessToken, refreshToken } = await this.authService.login(
+      user as AuthUser,
+      {
+        deviceId: "reset-pw",
+        userAgent: "reset-pw-flow",
+        ipAddress: null,
+      },
+    );
+
+    setAuthCookies(res, accessToken, refreshToken);
+
+    return res.json({ message: "Password reset successful" });
   }
 
   /**

@@ -45,4 +45,10 @@ export class UserService {
       $set: { lastLogin: new Date() },
     });
   }
+
+  async updatePassword(user: User, newPassword: string) {
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    user.password = passwordHash;
+    await user.save();
+  }
 }

@@ -10,6 +10,10 @@ import { LocalStrategy } from "./strategies/local.strategy";
 import { JwtAccessStrategy } from "./strategies/jwt-access.strategy";
 import { JWT_SIGN_IN_OPTIONS } from "src/common/constants/constants";
 import { AuthController } from "./auth.controller";
+import { PasswordResetSchema } from "./password-reset.entity";
+import { MongooseModule } from "@nestjs/mongoose";
+import { PasswordReset } from "./password-reset.entity";
+import { PasswordResetService } from "./password-reset.service";
 
 @Module({
   imports: [
@@ -17,6 +21,9 @@ import { AuthController } from "./auth.controller";
     RefreshTokenModule,
     SubscriptionModule,
     PassportModule,
+    MongooseModule.forFeature([
+      { name: PasswordReset.name, schema: PasswordResetSchema },
+    ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
@@ -28,7 +35,12 @@ import { AuthController } from "./auth.controller";
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtAccessStrategy],
+  providers: [
+    AuthService,
+    LocalStrategy,
+    JwtAccessStrategy,
+    PasswordResetService,
+  ],
   exports: [AuthService],
 })
 export class AuthModule {}

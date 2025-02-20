@@ -33,3 +33,14 @@ export class SignUpDto {
   @IsString({ message: "Organization must be a string" })
   organization: string;
 }
+
+export class ResetPasswordDto {
+  @IsNotEmpty()
+  @IsString({ message: "Token must be a string" })
+  token: string;
+
+  @IsNotEmpty()
+  @IsString({ message: "New password must be a string" })
+  @MinLength(8, { message: "Password must be at least 8 characters long" })
+  newPassword: string;
+}
