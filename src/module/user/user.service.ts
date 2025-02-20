@@ -1,6 +1,6 @@
 import { InjectModel } from "@nestjs/mongoose";
 import { User } from "./user.entity";
-import { Model } from "mongoose";
+import { Model, Types } from "mongoose";
 import { CreateUserDto } from "./user.dto";
 import { BadRequestException } from "@nestjs/common";
 import * as bcrypt from "bcrypt";
@@ -39,8 +39,9 @@ export class UserService {
     return this.userModel.findById(id).exec();
   }
 
-  async updateLastLogin(userId: string) {
-    await this.userModel.findByIdAndUpdate(userId, {
+  async updateLastLogin(userId: Types.ObjectId | string) {
+    const userIdObject = new Types.ObjectId(userId);
+    await this.userModel.findByIdAndUpdate(userIdObject, {
       $set: { lastLogin: new Date() },
     });
   }

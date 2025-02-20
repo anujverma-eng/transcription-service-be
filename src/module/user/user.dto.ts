@@ -24,13 +24,13 @@ export class CreateUserDto {
   @IsString({ message: "Name must be a string" })
   name: string;
 
-  @IsOptional()
-  @IsString({ message: "Organization must be a string" })
-  organization: string;
-
   @IsNotEmpty({ message: "Phone is required" })
   @IsString({ message: "Phone must be a string" })
   phone: string;
+
+  @IsOptional()
+  @IsString({ message: "Organization must be a string" })
+  organization: string;
 
   @IsOptional()
   @IsEnum(UserRole, { message: "Role must be a valid role" })

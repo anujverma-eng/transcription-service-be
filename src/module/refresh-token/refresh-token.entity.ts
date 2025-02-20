@@ -3,7 +3,7 @@ import { Document, Schema as MongooseSchema } from "mongoose";
 
 @Schema({ timestamps: true })
 export class RefreshToken extends Document {
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: "User" })
+  @Prop({ required: true, type: MongooseSchema.Types.ObjectId, ref: "User" })
   userId: string; // reference to the user
 
   @Prop({ required: true })

@@ -8,6 +8,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { AuthService } from "./auth.service";
 import { LocalStrategy } from "./strategies/local.strategy";
 import { JwtAccessStrategy } from "./strategies/jwt-access.strategy";
+import { JWT_SIGN_IN_OPTIONS } from "src/common/constants/constants";
 
 @Module({
   imports: [
@@ -19,7 +20,7 @@ import { JwtAccessStrategy } from "./strategies/jwt-access.strategy";
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         global: true,
-        signOptions: { expiresIn: "15m", issuer: "transcription-auth" },
+        signOptions: JWT_SIGN_IN_OPTIONS,
         secret: configService.get("JWT_SECRET"),
       }),
       inject: [ConfigService],
