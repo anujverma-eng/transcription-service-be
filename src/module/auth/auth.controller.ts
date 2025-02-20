@@ -7,21 +7,22 @@ import {
   Injectable,
   Post,
   Req,
+  Res,
+  UnauthorizedException,
   UseGuards,
 } from "@nestjs/common";
-import { Request } from "express";
+import { Response } from "express";
 import { JwtAuthGuard } from "src/common/guards/jwt-auth.guard";
 import { LocalAuthGuard } from "src/common/guards/local-auth.guard";
 import { RoleGuard } from "src/common/guards/role.guard";
-import { User } from "../user/user.entity";
 import { SignUpDto } from "./auth.dto";
-import { AuthTokens, AuthUser } from "./auth.interface";
+import {
+  AuthRequest,
+  AuthTokens,
+  AuthUser,
+  CookieRequest,
+} from "./auth.interface";
 import { AuthService } from "./auth.service";
-
-// Extend Express Request to include user property
-interface AuthRequest extends Request {
-  user: User;
-}
 
 @Injectable()
 @Controller("/api/v1/auth")
@@ -45,21 +46,37 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post("login")
   @HttpCode(HttpStatus.OK)
-  async login(@Req() req: AuthRequest) {
+  async login(@Req() req: AuthRequest, @Res() res: Response) {
     const user = req.user;
     const deviceId = "web-login";
     const userAgent = req.headers["user-agent"];
     const ipAddress = req.ip;
 
-    const tokens = await this.authService.login(user as AuthUser, {
-      ipAddress,
-      deviceId,
-      userAgent,
+    const { accessToken, refreshToken } = await this.authService.login(
+      user as AuthUser,
+      {
+        ipAddress,
+        deviceId,
+        userAgent,
+      },
+    );
+
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 15 * 60_000, // 15 min
     });
-    return {
-      message: "Login successful",
-      ...tokens,
-    };
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      sameSite: "strict",
+      secure: false,
+      maxAge: 7 * 24 * 60_000 * 60, // 7 days
+    });
+
+    // Important: Send the response
+    return res.json({ message: "Login successful" });
   }
 
   /**
@@ -68,12 +85,27 @@ export class AuthController {
    */
   @Post("refresh")
   @HttpCode(HttpStatus.OK)
-  async refresh(@Body("refreshToken") refreshToken: string) {
-    const newTokens = await this.authService.refreshTheTokens(refreshToken);
-    return {
-      message: "Tokens refreshed",
-      ...newTokens,
-    };
+  async refresh(@Req() req: CookieRequest, @Res() res: Response) {
+    const oldRefreshToken: string = req.cookies["refreshToken"];
+    if (!oldRefreshToken) {
+      throw new UnauthorizedException("No refresh token found in cookies");
+    }
+    const { accessToken, refreshToken } =
+      await this.authService.refreshTheTokens(oldRefreshToken);
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      sameSite: "strict", // or 'lax' / 'none'
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 15 * 60_000, // 15 min
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      sameSite: "strict",
+      secure: false,
+      maxAge: 7 * 24 * 60_000 * 60, // 7 days
+    });
+    return res.json({ message: "Refresh successful" });
   }
 
   /**
@@ -85,13 +117,17 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Post("logout")
   @HttpCode(HttpStatus.OK)
-  async logout(
-    @Req() req: AuthRequest,
-    @Body("refreshToken") refreshToken: string,
-  ) {
+  async logout(@Req() req: CookieRequest, @Res() res: Response) {
     const user = req.user as AuthUser;
-    const result = await this.authService.logout(refreshToken, user);
-    return result;
+
+    // If you need to identify which refresh token to revoke:
+    const refreshToken = req.cookies["refreshToken"];
+    if (refreshToken) {
+      await this.authService.logout(refreshToken, user);
+    }
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
+    return res.json({ message: "Logout Successfully" });
   }
 
   /**
