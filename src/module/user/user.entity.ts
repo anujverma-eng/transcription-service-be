@@ -9,7 +9,7 @@ export class User extends Document {
   @Prop({ required: true, unique: true })
   email: string;
 
-  @Prop({ required: true })
+  @Prop()
   password: string;
 
   @Prop({ required: true })
@@ -30,7 +30,7 @@ export class User extends Document {
   @Prop({ default: false })
   isBlocked: boolean;
 
-  @Prop()
+  @Prop({ default: null })
   googleId?: string; // for future Google OAuth
 
   @Prop()

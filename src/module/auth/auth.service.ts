@@ -160,6 +160,47 @@ export class AuthService {
     return { message: "Logout successful" };
   }
 
+  async validateGoogleUser(info: {
+    googleId: string;
+    email: string;
+    displayName?: string;
+  }) {
+    const { googleId, email, displayName } = info;
+
+    // 1) Check if there's already a user with this googleId
+    let user = await this.userService.findByGoogleId(googleId);
+    if (user) {
+      // user is found, return it
+      return user;
+    }
+
+    // 2) If no user with that googleId, check if a user with the same email exists
+    // This handles account linking (avoid duplicate user docs).
+    user = await this.userService.findByEmail(email);
+
+    if (user) {
+      // Link the existing user to googleId
+      if (!user.googleId) {
+        user.googleId = googleId;
+        // optional: if user doesn't have a name, set from google
+        if (!user.name && displayName) {
+          user.name = displayName;
+        }
+        await user.save();
+      }
+      return user;
+    }
+
+    // 3) If no user with same email, create a new user
+    // We won't set any passwordHash since they're logging in with Google only
+    const newUser = await this.userService.createGoogleUser(
+      googleId,
+      email,
+      displayName,
+    );
+    return newUser;
+  }
+
   /**
    * For the /profile endpoint: fetch user, subscription, plan usage, etc.
    */

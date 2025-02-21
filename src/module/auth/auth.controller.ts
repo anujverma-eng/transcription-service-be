@@ -15,6 +15,7 @@ import {
 } from "@nestjs/common";
 import { Response } from "express";
 import { Types } from "mongoose";
+import { GoogleAuthGuard } from "src/common/guards/google-auth.guard";
 import { JwtAuthGuard } from "src/common/guards/jwt-auth.guard";
 import { LocalAuthGuard } from "src/common/guards/local-auth.guard";
 import { RoleGuard } from "src/common/guards/role.guard";
@@ -29,7 +30,6 @@ import {
 import { AuthService } from "./auth.service";
 import { setAuthCookies } from "./auth.utilities";
 import { PasswordResetService } from "./password-reset.service";
-
 @Injectable()
 @Controller("/api/v1/auth")
 export class AuthController {
@@ -43,14 +43,13 @@ export class AuthController {
    * SIGN UP + auto login
    */
   @Post("sign-up")
-  async signUp(
-    @Body() signUpDto: SignUpDto,
-  ): Promise<{ message: string } & AuthTokens> {
-    const tokens: AuthTokens = await this.authService.signUp(signUpDto);
-    return {
-      message: "User registered and logged in",
-      ...tokens,
-    };
+  async signUp(@Body() signUpDto: SignUpDto, @Res() res: Response) {
+    const { accessToken, refreshToken }: AuthTokens =
+      await this.authService.signUp(signUpDto);
+
+    setAuthCookies(res, accessToken, refreshToken);
+
+    return res.json({ message: "User registered and logged in" });
   }
 
   @UseGuards(LocalAuthGuard)
@@ -182,6 +181,52 @@ export class AuthController {
     setAuthCookies(res, accessToken, refreshToken);
 
     return res.json({ message: "Password reset successful" });
+  }
+
+  /**
+   * Step 1: Initiate Google OAuth
+   * This route triggers a redirect to Google.
+   */
+  @Get("google")
+  @UseGuards(GoogleAuthGuard)
+  googleAuth() {
+    // This guard automatically redirects to Google
+    return;
+  }
+
+  /**
+   * Step 2: Google callback (redirectUri)
+   * Passport uses the 'google' strategy to validate the user
+   * Then we auto-login the user in Nest (issue JWT tokens).
+   */
+  @Get("google/redirect")
+  @UseGuards(GoogleAuthGuard)
+  async googleRedirect(@Req() req: AuthRequest, @Res() res: Response) {
+    try {
+      if (!req.user) {
+        throw new UnauthorizedException("No user data from Google");
+      }
+
+      const user = req.user as AuthUser;
+      console.log("Google auth user data:", user); // Debug log
+
+      const { accessToken, refreshToken } = await this.authService.login(user, {
+        deviceId: "google-oauth",
+        userAgent: req.headers["user-agent"],
+        ipAddress: req.ip,
+      });
+
+      setAuthCookies(res, accessToken, refreshToken);
+
+      // Redirect to your frontend application instead of Google
+      return res.redirect(process.env.FRONTEND_URL || "http://localhost:3000");
+    } catch (error) {
+      console.error("Google redirect error:", error);
+      // Redirect to frontend with error
+      return res.redirect(
+        `${process.env.FRONTEND_URL || "http://localhost:3000"}/auth/error`,
+      );
+    }
   }
 
   /**

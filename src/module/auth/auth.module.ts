@@ -14,7 +14,7 @@ import { PasswordResetSchema } from "./password-reset.entity";
 import { MongooseModule } from "@nestjs/mongoose";
 import { PasswordReset } from "./password-reset.entity";
 import { PasswordResetService } from "./password-reset.service";
-
+import { GoogleStrategy } from "./strategies/google.strategy";
 @Module({
   imports: [
     UserModule,
@@ -40,6 +40,7 @@ import { PasswordResetService } from "./password-reset.service";
     LocalStrategy,
     JwtAccessStrategy,
     PasswordResetService,
+    GoogleStrategy,
   ],
   exports: [AuthService],
 })

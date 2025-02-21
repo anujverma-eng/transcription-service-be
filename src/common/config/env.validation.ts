@@ -8,6 +8,9 @@ export function validateEnv(config: Record<string, any>) {
     MONGO_URI: Joi.string().required(),
     JWT_ACCESS_TOKEN_SECRET: Joi.string().required(),
     JWT_REFRESH_TOKEN_SECRET: Joi.string().required(),
+    GOOGLE_CLIENT_ID: Joi.string().required(),
+    GOOGLE_CLIENT_SECRET: Joi.string().required(),
+    GOOGLE_CALLBACK_URL: Joi.string().required(),
   });
 
   const result = schema.validate(config, { allowUnknown: true });
