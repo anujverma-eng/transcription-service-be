@@ -97,6 +97,15 @@ export class AuthService {
 
     // 5) Update lastLogin
     await this.userService.updateLastLogin(user._id);
+
+    try {
+      await this.subscriptionService.createFreSubscriptionIfNotExists(
+        user._id.toHexString(),
+      );
+    } catch (error) {
+      console.log(error);
+    }
+
     return { accessToken, refreshToken };
   }
 
