@@ -40,11 +40,12 @@ export class UserService {
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.userModel.findOne({ email }).exec();
+    return this.userModel.findOne({ email }).lean().exec();
   }
 
   async findById(id: string): Promise<User | null> {
-    return this.userModel.findById(id).exec();
+    const userIdObject = new Types.ObjectId(id);
+    return this.userModel.findById(userIdObject).lean().exec();
   }
 
   async updateLastLogin(userId: Types.ObjectId | string) {
@@ -55,13 +56,19 @@ export class UserService {
   }
 
   async updatePassword(user: User, newPassword: string) {
-    const passwordHash = await bcrypt.hash(newPassword, 10);
-    user.password = passwordHash;
-    await user.save();
+    try {
+      const passwordHash = await bcrypt.hash(newPassword, 10);
+      await this.userModel.findByIdAndUpdate(user._id, {
+        $set: { password: passwordHash },
+      });
+    } catch (error) {
+      console.log(error);
+      throw new BadRequestException("Error updating password");
+    }
   }
 
   async findByGoogleId(googleId: string): Promise<User | null> {
-    return this.userModel.findOne({ googleId }).exec();
+    return this.userModel.findOne({ googleId }).lean().exec();
   }
 
   async createGoogleUser(googleId: string, email: string, name?: string) {

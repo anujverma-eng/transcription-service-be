@@ -20,10 +20,13 @@ export class SubscriptionService {
   ): Promise<Subscription> {
     const { userId } = dto;
     const userIdObject = new Types.ObjectId(userId);
-    const existing = await this.subscriptionModel.findOne({
-      userId: userIdObject,
-      isActive: true,
-    });
+    const existing = await this.subscriptionModel
+      .findOne({
+        userId: userIdObject,
+        isActive: true,
+      })
+      .lean()
+      .exec();
     if (existing) {
       return existing;
     }
@@ -62,10 +65,12 @@ export class SubscriptionService {
     userId: Types.ObjectId | string,
   ): Promise<Subscription | null> {
     const userIdObject = new Types.ObjectId(userId);
-    const sub = await this.subscriptionModel.findOne({
-      userId: userIdObject,
-      isActive: true,
-    });
+    const sub = await this.subscriptionModel
+      .findOne({
+        userId: userIdObject,
+        isActive: true,
+      })
+      .lean();
     return sub;
   }
 
@@ -74,17 +79,22 @@ export class SubscriptionService {
    */
   async canTranscribe(
     userId: Types.ObjectId | string,
-    minutes: number,
-  ): Promise<boolean> {
-    try {
-      const sub = await this.getActiveSubscription(userId);
-      const { dailyUsedMinutes = 0 } = sub;
-      const dailyLimit = sub.dailyLimit;
-      return dailyUsedMinutes + minutes <= dailyLimit;
+    fileSeconds: number,
+  ): Promise<void> {
+    const sub = await this.createFreSubscriptionIfNotExists(userId.toString());
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (e) {
-      return false;
+    const dailyUsedSeconds = Math.round(sub.dailyUsedMinutes * 60 || 0);
+    const dailyLimitInSeconds = sub.dailyLimit * 60;
+    const wantedToUse = dailyUsedSeconds + fileSeconds;
+
+    if (dailyUsedSeconds >= dailyLimitInSeconds) {
+      throw new BadRequestException(
+        "You have reached your daily limit and cannot transcribe more.",
+      );
+    } else if (wantedToUse > dailyLimitInSeconds) {
+      throw new BadRequestException(
+        "You are asking to transcribe more than your daily limit.",
+      );
     }
   }
 
@@ -95,9 +105,21 @@ export class SubscriptionService {
     userId: Types.ObjectId | string,
     minutes: number,
   ): Promise<void> {
-    const sub = await this.getActiveSubscription(userId);
-    sub.dailyUsedMinutes += minutes;
-    await sub.save();
+    try {
+      const sub = await this.getActiveSubscription(userId);
+      if (!sub) {
+        throw new BadRequestException(
+          "Subscription not found || Increment Daily Usage Failed",
+        );
+      }
+      await this.subscriptionModel.updateOne(
+        { _id: sub._id },
+        { $inc: { dailyUsedMinutes: minutes } },
+      );
+    } catch (error) {
+      console.error(error);
+      throw new BadRequestException("Could not increment daily usage", error);
+    }
   }
 
   /**
@@ -119,6 +141,14 @@ export class SubscriptionService {
     const sub = await this.getActiveSubscription(userId);
     sub.dailyUsedMinutes = 0;
     await sub.save();
+  }
+
+  // Used By Cron Job
+  async resetDailyUsageForFreeUsers(): Promise<void> {
+    await this.subscriptionModel.updateMany(
+      { isPaid: false },
+      { $set: { dailyUsedMinutes: 0 } },
+    );
   }
 
   async createFreSubscriptionIfNotExists(

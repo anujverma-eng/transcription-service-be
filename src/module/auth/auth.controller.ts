@@ -135,7 +135,7 @@ export class AuthController {
       `Here is your reset token: ${resetToken} (valid 1 hour)\n` +
       `Or link: http://localhost:3000/api/v1/auth/reset-password?token=${resetToken}`;
 
-    return { message };
+    return { message, resetToken };
   }
 
   @Post("reset-password")
@@ -156,7 +156,7 @@ export class AuthController {
     }
 
     // 2) Retrieve the user
-    const user = await this.userService.findById(resetDoc.userId);
+    const user = await this.userService.findById(resetDoc.userId.toString());
     if (!user) {
       throw new NotFoundException("User no longer exists");
     }

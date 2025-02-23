@@ -18,7 +18,10 @@ export class PasswordResetService {
     const token = randomBytes(20).toString("hex");
     const expiresAt = new Date(Date.now() + expiresInMinutes * 60_000);
 
-    const existingReset = await this.resetModel.findOne({ userId });
+    const existingReset = await this.resetModel
+      .findOne({ userId })
+      .lean()
+      .exec();
     if (existingReset && existingReset.expiresAt > new Date()) {
       return existingReset.token;
     }
@@ -33,11 +36,11 @@ export class PasswordResetService {
   }
 
   async findByToken(token: string): Promise<PasswordReset | null> {
-    return this.resetModel.findOne({ token }).exec();
+    return this.resetModel.findOne({ token }).lean().exec();
   }
 
   async markUsed(token: string) {
     // await this.resetModel.updateOne({ token }, { $set: { used: true } }).exec();
-    await this.resetModel.deleteOne({ token });
+    await this.resetModel.deleteOne({ token }).lean().exec();
   }
 }
