@@ -1,17 +1,21 @@
 import { Module } from "@nestjs/common";
-import { TranscriptionJobService } from "./transcription-job.service";
 import { MongooseModule } from "@nestjs/mongoose";
-import {
-  TranscriptionJob,
-  TranscriptionJobSchema,
-} from "./transcription-job.entity";
-import { TranscriptionController } from "./transcription-job.controller";
-import { SubscriptionService } from "../subscription/subscription.service";
 import { S3Service } from "../s3/s3.service";
 import {
   Subscription,
   SubscriptionSchema,
 } from "../subscription/subscription.entity";
+import { SubscriptionModule } from "../subscription/subscription.module";
+import { TranscriptionController } from "./transcription-job.controller";
+import {
+  TranscriptionJob,
+  TranscriptionJobSchema,
+} from "./transcription-job.entity";
+import { TranscriptionJobService } from "./transcription-job.service";
+import { BullModule } from "@nestjs/bull";
+import { TranscriptionPriorityService } from "./transcription-priority.service";
+import { TranscriptionProcessor } from "./processors/transcription.processor";
+import { TranscriptionErrorModule } from "../transcription-error/transcription-error.module";
 
 @Module({
   imports: [
@@ -19,8 +23,31 @@ import {
       { name: TranscriptionJob.name, schema: TranscriptionJobSchema },
       { name: Subscription.name, schema: SubscriptionSchema },
     ]),
+    BullModule.registerQueue({
+      name: "transcription",
+      // settings: {
+      //   stalledInterval: 0,
+      //   maxStalledCount: 0,
+      // },
+      defaultJobOptions: {
+        removeOnComplete: false,
+        removeOnFail: false,
+        attempts: 2,
+        backoff: {
+          type: "exponential",
+          delay: 5000,
+        },
+      },
+    }),
+    SubscriptionModule,
+    TranscriptionErrorModule,
   ],
   controllers: [TranscriptionController],
-  providers: [TranscriptionJobService, SubscriptionService, S3Service],
+  providers: [
+    TranscriptionJobService,
+    S3Service,
+    TranscriptionPriorityService,
+    TranscriptionProcessor,
+  ],
 })
 export class TranscriptionJobModule {}

@@ -30,6 +30,9 @@ export class TranscriptionJob extends Document {
 
   @Prop({ default: null })
   error?: string;
+
+  @Prop({ default: true })
+  isDeducted: boolean;
 }
 
 export const TranscriptionJobSchema =

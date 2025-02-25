@@ -1,14 +1,16 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import { Model, Types } from "mongoose";
+import { ClientSession, Model, Types } from "mongoose";
 import { CreateSubscriptionDto } from "./subscription.dto";
 import { Subscription } from "./subscription.entity";
+import { PlanService } from "../plan/plan.service";
 
 @Injectable()
 export class SubscriptionService {
   constructor(
     @InjectModel(Subscription.name)
     private subscriptionModel: Model<Subscription>,
+    private planService: PlanService,
   ) {}
 
   /**
@@ -31,22 +33,7 @@ export class SubscriptionService {
       return existing;
     }
 
-    // TODO: get the free plan from the database
-    // const freePlan = await this.planModel.findOne({
-    //   isPaid: false,
-    // });
-
-    const freePlan = {
-      _id: new Types.ObjectId(),
-    };
-
-    // Default values
-    // dailyLimit = 5;
-    // dailyUsed = 0;
-    // startDate = new Date();
-    // endDate = null;
-    // isActive = true;
-    // isPaid = false;
+    const freePlan = await this.planService.getFreePlan();
 
     const created = new this.subscriptionModel({
       ...dto,
@@ -80,7 +67,7 @@ export class SubscriptionService {
   async canTranscribe(
     userId: Types.ObjectId | string,
     fileSeconds: number,
-  ): Promise<void> {
+  ): Promise<Subscription> {
     const sub = await this.createFreSubscriptionIfNotExists(userId.toString());
 
     const dailyUsedSeconds = Math.round(sub.dailyUsedMinutes * 60 || 0);
@@ -96,6 +83,7 @@ export class SubscriptionService {
         "You are asking to transcribe more than your daily limit.",
       );
     }
+    return sub;
   }
 
   /**
@@ -130,8 +118,16 @@ export class SubscriptionService {
     minutes: number,
   ): Promise<void> {
     const sub = await this.getActiveSubscription(userId);
-    sub.dailyUsedMinutes = Math.max(0, sub.dailyUsedMinutes - minutes);
-    await sub.save();
+    if (!sub) {
+      console.error("Subscription not found || Decrement Daily Usage Failed");
+      throw new BadRequestException(
+        "Subscription not found || Decrement Daily Usage Failed",
+      );
+    }
+    await this.subscriptionModel.updateOne(
+      { _id: sub._id },
+      { $inc: { dailyUsedMinutes: -minutes } },
+    );
   }
 
   /**
@@ -139,8 +135,16 @@ export class SubscriptionService {
    */
   async resetDailyUsage(userId: Types.ObjectId | string): Promise<void> {
     const sub = await this.getActiveSubscription(userId);
-    sub.dailyUsedMinutes = 0;
-    await sub.save();
+    if (!sub) {
+      console.error("Subscription not found || Reset Daily Usage Failed");
+      throw new BadRequestException(
+        "Subscription not found || Reset Daily Usage Failed",
+      );
+    }
+    await this.subscriptionModel.updateOne(
+      { _id: sub._id },
+      { $set: { dailyUsedMinutes: 0 } },
+    );
   }
 
   // Used By Cron Job
@@ -171,7 +175,10 @@ export class SubscriptionService {
    * If user has a free subscription, remove it and create a new one with the new plan
    * If user has a paid subscription, update the planId and dailyLimit
    */
-  async upgradeSubscription(dto: CreateSubscriptionDto): Promise<Subscription> {
+  async upgradeSubscription(
+    dto: CreateSubscriptionDto,
+    session?: ClientSession,
+  ): Promise<Subscription> {
     const { userId, planId } = dto;
     if (!planId) {
       throw new BadRequestException("planId is required");
@@ -182,39 +189,39 @@ export class SubscriptionService {
       ? (sub._id as Types.ObjectId).toHexString()
       : null;
 
-    return this.createPaidSubscription(dto, planId, oldSubId);
+    return this.createPaidSubscription(dto, planId, oldSubId, session);
   }
 
   private async createPaidSubscription(
     newSubDto: CreateSubscriptionDto,
     planId: string,
     oldSubId?: string | null,
+    session?: ClientSession,
   ) {
-    // TODO: Get Plan from DB
-    // const plan = await this.planModel.findById(new Types.ObjectId(planId));
-    const plan = {
-      _id: new Types.ObjectId(),
-      dailyLimit: 100,
-    };
-    let dailyLimit = newSubDto.dailyLimit;
+    const plan = await this.planService.getPlanById(planId);
+    let dailyLimit = plan.dailyLimit;
 
     if (oldSubId) {
       const oldSubIdObject = new Types.ObjectId(oldSubId);
-      const oldSub = await this.subscriptionModel.findById(oldSubIdObject);
+      const oldSub = await this.subscriptionModel
+        .findById(oldSubIdObject)
+        .session(session);
       if (oldSub && oldSub.isActive) {
         dailyLimit += oldSub.dailyLimit;
-        await this.subscriptionModel.updateOne(
-          { _id: oldSubIdObject },
-          { isActive: false, dailyLimit: 0, endDate: new Date() },
-        );
+        await this.subscriptionModel
+          .updateOne(
+            { _id: oldSubIdObject },
+            { isActive: false, dailyLimit: 0, endDate: new Date() },
+          )
+          .session(session);
       }
     }
 
     const userIdObject = new Types.ObjectId(newSubDto.userId);
-    const newSub = await this.createFreeSubscription({
+    const newSub = await this.subscriptionModel.create({
       ...newSubDto,
       userId: userIdObject.toHexString(),
-      dailyLimit: dailyLimit + plan.dailyLimit,
+      dailyLimit: dailyLimit,
       isPaid: true,
     });
     return newSub;

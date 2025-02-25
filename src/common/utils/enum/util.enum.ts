@@ -8,4 +8,6 @@ export enum TranscriptionStatus {
   PROCESSING = "processing",
   COMPLETED = "completed",
   FAILED = "failed",
+  PENDING = "pending",
+  RETRYING = "retrying",
 }

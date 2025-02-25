@@ -4,12 +4,14 @@ import { AppService } from "./app.service";
 import { AppConfigModule } from "./common/config/config.module";
 import { DatabaseModule } from "./database/database.module";
 import { AuthModule } from "./module/auth/auth.module";
-import { SubscriptionModule } from "./module/subscription/subscription.module";
 import { S3Module } from "./module/s3/s3.module";
+import { SubscriptionModule } from "./module/subscription/subscription.module";
 import { TranscriptionJobModule } from "./module/transcription-job/transcription-job.module";
 // import { ScheduleModule } from "@nestjs/schedule";
+import { BullModule } from "@nestjs/bull";
 import { UsageResetService } from "./tasks/usage-reset.service";
-
+import { PlanModule } from "./module/plan/plan.module";
+import { PaymentsModule } from "./module/payments/payments.module";
 @Module({
   imports: [
     // ScheduleModule.forRoot(),
@@ -19,6 +21,14 @@ import { UsageResetService } from "./tasks/usage-reset.service";
     S3Module,
     SubscriptionModule,
     TranscriptionJobModule,
+    PlanModule,
+    PaymentsModule,
+    BullModule.forRoot({
+      redis: {
+        host: "localhost",
+        port: 6379,
+      },
+    }),
   ],
   controllers: [AppController],
   providers: [AppService, UsageResetService],

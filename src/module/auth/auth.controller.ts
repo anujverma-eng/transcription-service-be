@@ -208,7 +208,6 @@ export class AuthController {
       }
 
       const user = req.user as AuthUser;
-      console.log("Google auth user data:", user); // Debug log
 
       const { accessToken, refreshToken } = await this.authService.login(user, {
         deviceId: "google-oauth",

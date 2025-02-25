@@ -19,6 +19,9 @@ import { S3Service } from "../s3/s3.service";
 import { SubscriptionService } from "../subscription/subscription.service";
 import { TranscriptionJobService } from "./transcription-job.service";
 import { getS3Key, PresignRequestDto, QueueJobDto } from "./upload-audio.dto";
+import { TranscriptionPriorityService } from "./transcription-priority.service";
+import { InjectQueue } from "@nestjs/bull";
+import { Queue } from "bull";
 
 @Controller("api/v1/transcription")
 export class TranscriptionController {
@@ -26,6 +29,8 @@ export class TranscriptionController {
     private readonly transcriptionService: TranscriptionJobService,
     private readonly subscriptionService: SubscriptionService,
     private readonly s3Service: S3Service,
+    private readonly priorityService: TranscriptionPriorityService,
+    @InjectQueue("transcription") private readonly transcriptionQueue: Queue,
   ) {}
 
   @RolesDecorator(UserRole.USER, UserRole.ADMIN)
@@ -76,6 +81,14 @@ export class TranscriptionController {
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Post("queue-job")
   async queueJob(@Req() req: AuthRequest, @Body() body: QueueJobDto) {
+    // console.log(body.audioFileKey);
+    // return {
+    //   message: "transcription job created",
+    //   newJob: body,
+    //   priority: 0,
+    //   submissionIndex: 0,
+    //   jobId: "",
+    // };
     const user = req.user as AuthUser;
     if (!user || !user._id) {
       throw new BadRequestException("User not found in request");
@@ -84,10 +97,16 @@ export class TranscriptionController {
     const { audioFileKey, duration } = body;
 
     // Possibly do a final check or "reserve usage"
-    await this.subscriptionService.canTranscribe(user._id.toString(), duration);
+    const subscription = await this.subscriptionService.canTranscribe(
+      user._id.toString(),
+      duration,
+    );
+
+    const isPaid = subscription?.isPaid === true;
 
     const durationInfo = extractAudioDuration(duration);
 
+    // 3) create job => pre-deduct usage
     const newJob = await this.transcriptionService.createJob({
       userId: user._id.toString(),
       audioFileKey,
@@ -96,9 +115,38 @@ export class TranscriptionController {
       durationText: durationInfo.durationText,
       usageMinutes: durationInfo.usageMinutes,
     });
+
+    // 4) compute priority => get global submission index from Redis
+    const submissionIndex = await this.priorityService.getNextSubmissionIndex();
+    const priority = this.priorityService.computePriority(
+      isPaid,
+      duration,
+      submissionIndex,
+    );
+
+    // 5) add to transcription queue
+    await this.transcriptionQueue.add(
+      "transcription",
+      {
+        // eslint-disable-next-line @typescript-eslint/no-base-to-string
+        jobId: newJob._id.toString(),
+        userId: user._id.toString(),
+        ...newJob.toObject(),
+      },
+      {
+        jobId: newJob.audioFileKey,
+        priority,
+        delay: 1000,
+      },
+    );
+
     return {
-      message: "Transcription job created",
+      message: "transcription job created",
       newJob,
+      priority,
+      submissionIndex,
+      // eslint-disable-next-line @typescript-eslint/no-base-to-string
+      jobId: newJob._id.toString(),
     };
   }
 
@@ -116,7 +164,7 @@ export class TranscriptionController {
     if (job.userId.toString() !== user._id.toString()) {
       throw new BadRequestException("This job does not belong to you.");
     }
-    if (job.status === TranscriptionStatus.QUEUED) {
+    if (job.status != TranscriptionStatus.COMPLETED) {
       const audioLink = await this.s3Service.getPresignedGetUrl(
         job.audioFileKey,
       );
