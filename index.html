@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Audio Metadata & Playback Demo</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; }
+    #metadata { margin-top: 20px; }
+    label { display: block; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Audio Metadata & Playback Demo</h1>
+  
+  <label for="fileInput">Select an Audio File (MP3, WAV, etc.):</label>
+  <input type="file" id="fileInput" accept="audio/*">
+  
+  <div id="metadata"></div>
+  <div id="playerContainer"></div>
+
+  <audio controls src="https://s3.us-west-2.amazonaws.com/av.transcription.eng.dev.testing/audios/67b9660ae363e2f8b0aa4efe/1740232017416-1+mb.mp3
+">
+  
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const metadataDiv = document.getElementById('metadata');
+    const playerContainer = document.getElementById('playerContainer');
+
+    fileInput.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      // Create a blob URL for the selected file
+      const objectUrl = URL.createObjectURL(file);
+      
+      // Create an audio element (without controls initially)
+      const audio = document.createElement('audio');
+      audio.src = objectUrl;
+      
+      // Once metadata is loaded, extract the properties
+      audio.addEventListener('loadedmetadata', () => {
+        const duration = audio.duration;
+        const buffered = audio.buffered;
+        const seekable = audio.seekable;
+        const readyState = audio.readyState;
+        const networkState = audio.networkState;
+        
+        // Format the buffered ranges for display
+        let bufferedInfo = "";
+        for (let i = 0; i < buffered.length; i++) {
+          bufferedInfo += `Range ${i + 1}: ${buffered.start(i).toFixed(2)}s to ${buffered.end(i).toFixed(2)}s<br>`;
+        }
+        
+        // Format the seekable ranges for display
+        let seekableInfo = "";
+        for (let i = 0; i < seekable.length; i++) {
+          seekableInfo += `Range ${i + 1}: ${seekable.start(i).toFixed(2)}s to ${seekable.end(i).toFixed(2)}s<br>`;
+        }
+        
+        // Display the metadata
+        metadataDiv.innerHTML = `
+          <strong>Duration:</strong> ${duration.toFixed(2)} seconds<br>
+          <strong>Ready State:</strong> ${readyState}<br>
+          <strong>Network State:</strong> ${networkState}<br>
+          <strong>Buffered:</strong><br>${bufferedInfo || 'No buffered data'}<br>
+          <strong>Seekable:</strong><br>${seekableInfo || 'No seekable data'}<br>
+        `;
+        
+        // Remove the temporary audio element from the DOM if not needed
+        // If you want to allow playback, you can reuse this element.
+      });
+
+      // Create an audio player with controls for playback
+      const player = document.createElement('audio');
+      player.controls = true;
+      player.src = objectUrl;
+      
+      // Clear any previous player and metadata, then append new ones
+      playerContainer.innerHTML = '';
+      playerContainer.appendChild(player);
+    });
+  </script>
+</body>
+</html>

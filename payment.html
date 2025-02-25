@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Razorpay Test Checkout</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 40px; }
+    #rzp-button1 { font-size: 16px; padding: 10px 20px; }
+  </style>
+</head>
+<body>
+  <h1>Razorpay Test Checkout</h1>
+  <p>Click the button below to open the Razorpay payment gateway in test mode.</p>
+  <button id="rzp-button1">Pay Now</button>
+  
+  <!-- Razorpay Checkout Script -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script>
+    // Replace these values with your actual test data:
+    const options = {
+      key: "rzp_test_pcQeEnWWj8uxOA", // Replace with your Razorpay test Key ID
+      amount: "100000", // Amount in subunits (e.g., 50000 for INR 500.00)
+      currency: "INR",
+      name: "Anuj Verma",
+      description: "Test Transaction",
+      order_id: "order_PzrlHaxfkVsQFj", // Replace with the order ID returned by your backend
+      handler: function (response) {
+        alert("Payment Successful!\nPayment ID: " + response.razorpay_payment_id);
+        console.log("Payment Response:", response);
+      },
+      prefill: {
+        name: "Anuj Verma",
+        email: "anujverma123ok@gmail.com",
+        contact: "9999999999"
+      },
+      theme: {
+        color: "#F37254"
+      }
+    };
+    
+    const rzp1 = new Razorpay(options);
+    document.getElementById('rzp-button1').onclick = function(e) {
+      rzp1.open();
+      e.preventDefault();
+    };
+  </script>
+</body>
+</html>
