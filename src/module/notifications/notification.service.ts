@@ -4,6 +4,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { InjectQueue } from "@nestjs/bull";
 import { Queue } from "bull";
 import { NotificationPayload, NotificationType } from "./notification.dto";
+import { callSafe } from "src/common/utils/common.util";
 
 @Injectable()
 export class NotificationService {
@@ -17,14 +18,8 @@ export class NotificationService {
    * Put an email job onto the queue
    */
   async sendEmail(payload: NotificationPayload) {
-    try {
-      await this.notificationQueue.add("email", payload);
-      this.logger.log(`Email queued for type=${payload.type}`);
-    } catch (error: unknown) {
-      // eslint-disable-next-line @typescript-eslint/no-base-to-string, @typescript-eslint/restrict-template-expressions
-      this.logger.error(`Failed to queue email: ${error}`);
-      throw error;
-    }
+    await callSafe(() => this.notificationQueue.add("email", payload));
+    this.logger.log(`Email queued for type=${payload.type}`);
   }
 
   /**
