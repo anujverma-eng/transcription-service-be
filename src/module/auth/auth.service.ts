@@ -14,6 +14,8 @@ import {
   JWT_SIGN_IN_OPTIONS,
 } from "src/common/constants/constants";
 import { AuthTokens, AuthUser } from "./auth.interface";
+import { NotificationService } from "../notifications/notification.service";
+import { NotificationType } from "../notifications/notification.dto";
 @Injectable()
 export class AuthService {
   constructor(
@@ -21,6 +23,7 @@ export class AuthService {
     private refreshTokenService: RefreshTokenService,
     private subscriptionService: SubscriptionService,
     private jwtService: JwtService,
+    private notificationService: NotificationService,
   ) {}
 
   /**
@@ -50,6 +53,12 @@ export class AuthService {
    */
   async signUp(signUpDto: SignUpDto): Promise<AuthTokens> {
     const user = await this.userService.createUser(signUpDto as CreateUserDto);
+    await this.notificationService.sendEmail({
+      type: NotificationType.USER_REGISTRATION,
+      to: user.email,
+      username: user.email,
+      subject: "Welcome to Transcription SaaS",
+    });
     return await this.login(user as AuthUser);
   }
 
@@ -119,7 +128,7 @@ export class AuthService {
    *  - Stores the new refresh token in the DB, so the user stays logged in.
    */
   async refreshTheTokens(oldRefreshToken: string) {
-    // 1) Verify the old refresh token’s signature & expiry
+    // 1) Verify the old refresh token's signature & expiry
     try {
       await this.jwtService.verify(oldRefreshToken);
     } catch (error) {
@@ -149,7 +158,7 @@ export class AuthService {
   }
 
   /**
-   * Logout: revoke the user’s current refresh token so it can’t be used again.
+   * Logout: revoke the user's current refresh token so it can't be used again.
    */
   async logout(refreshToken: string, user: AuthUser) {
     // The user might pass the refresh token from local storage
@@ -190,12 +199,13 @@ export class AuthService {
     if (user) {
       // Link the existing user to googleId
       if (!user.googleId) {
-        user.googleId = googleId;
-        // optional: if user doesn't have a name, set from google
-        if (!user.name && displayName) {
-          user.name = displayName;
-        }
-        await user.save();
+        // eslint-disable-next-line @typescript-eslint/no-base-to-string
+        user = await this.userService.findByIdAndUpdate(user._id.toString(), {
+          $set: {
+            googleId,
+            ...(!user.name && displayName ? { name: displayName } : {}),
+          },
+        });
       }
       return user;
     }

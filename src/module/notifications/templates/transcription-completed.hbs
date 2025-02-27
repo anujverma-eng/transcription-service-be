@@ -1,0 +1,14 @@
+<!-- transcription-completed.hbs -->
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <h2 style="color: #2c3e50;">Your Transcription is Ready!</h2>
+  <p>Hello,</p>
+  <p>We have successfully processed your file <strong>{{fileName}}</strong>.</p>
+  {{#if downloadUrl}}
+  <p>You can download the transcript from the link below:</p>
+  <p><a href="{{downloadUrl}}" style="color: #4285f4;">Download Transcript</a></p>
+  {{/if}}
+  <p style="margin-top: 30px; color: #7f8c8d;">
+    Thank you for using our service,<br>
+    The TranscriptionMaster Team
+  </p>
+</div>

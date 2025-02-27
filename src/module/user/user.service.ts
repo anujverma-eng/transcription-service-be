@@ -39,6 +39,11 @@ export class UserService {
     return user;
   }
 
+  async findByIdAndUpdate(id: string, update: any): Promise<User | null> {
+    const userIdObject = new Types.ObjectId(id);
+    return this.userModel.findByIdAndUpdate(userIdObject, update).lean().exec();
+  }
+
   async findByEmail(email: string): Promise<User | null> {
     return this.userModel.findOne({ email }).lean().exec();
   }

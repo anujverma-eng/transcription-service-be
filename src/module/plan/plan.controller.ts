@@ -16,6 +16,11 @@ import { JwtAuthGuard } from "src/common/guards/jwt-auth.guard";
 import { RolesDecorator } from "src/common/decorators/role.decorator";
 import { RoleGuard } from "src/common/guards/role.guard";
 import { UserRole } from "src/common/utils/enum/util.enum";
+import { NotificationService } from "../notifications/notification.service";
+import {
+  NotificationType,
+  SendNotificationDto,
+} from "../notifications/notification.dto";
 
 /**
  * Admin-only endpoints for plan management
@@ -24,7 +29,10 @@ import { UserRole } from "src/common/utils/enum/util.enum";
 @UseGuards(JwtAuthGuard, RoleGuard)
 @RolesDecorator(UserRole.ADMIN)
 export class PlanController {
-  constructor(private readonly planService: PlanService) {}
+  constructor(
+    private readonly planService: PlanService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   /**
    * Create a new plan
@@ -74,4 +82,16 @@ export class PlanController {
   // async getUsersForPlan(@Param("id") id: string) {
   //   return this.planService.getUsersForPlan(id);
   // }
+
+  @Post("send-notification")
+  async sendNotification(@Body() dto: SendNotificationDto) {
+    await this.notificationService.sendEmail({
+      type: NotificationType.TRANSCRIPTION_COMPLETED,
+      to: dto.email,
+      subject: "Your transcription is done!",
+      fileName: dto.fileName,
+      downloadUrl: dto.downloadUrl,
+      // jobId: dto.jobId,
+    });
+  }
 }

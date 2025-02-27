@@ -12,6 +12,7 @@ import { BullModule } from "@nestjs/bull";
 import { UsageResetService } from "./tasks/usage-reset.service";
 import { PlanModule } from "./module/plan/plan.module";
 import { PaymentsModule } from "./module/payments/payments.module";
+import { NotificationModule } from "./module/notifications/notification.module";
 @Module({
   imports: [
     // ScheduleModule.forRoot(),
@@ -23,6 +24,7 @@ import { PaymentsModule } from "./module/payments/payments.module";
     TranscriptionJobModule,
     PlanModule,
     PaymentsModule,
+    NotificationModule,
     BullModule.forRoot({
       redis: {
         host: "localhost",

@@ -24,12 +24,16 @@ async function bootstrap() {
   });
 
   const transcriptionQueue = app.get(getQueueToken("transcription"))
+  const notificationQueue  = app.get(getQueueToken("notifications"))
 
   const serverAdapter = new ExpressAdapter();
   serverAdapter.setBasePath("/admin/queues/bull-board");
 
   createBullBoard({
-    queues: [new BullAdapter(transcriptionQueue)],
+    queues: [
+      new BullAdapter(transcriptionQueue),
+      new BullAdapter(notificationQueue),
+    ],
     serverAdapter,
     options: {
       uiConfig: {

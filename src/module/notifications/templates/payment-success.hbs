@@ -1,0 +1,17 @@
+<!-- payment-success.hbs -->
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <h2 style="color: #2c3e50;">Subscription Purchase Successful</h2>
+  <p>Hello,</p>
+  <p>Thank you for purchasing the <strong>{{planName}}</strong> plan!</p>
+  <ul>
+    <li><strong>Amount:</strong> {{amount}} {{currency}}</li>
+    {{#if invoiceId}}
+    <li><strong>Invoice ID:</strong> {{invoiceId}}</li>
+    {{/if}}
+  </ul>
+  <p>We appreciate your support. Your subscription is now active, and you can enjoy all the benefits immediately!</p>
+  <p style="margin-top: 30px; color: #7f8c8d;">
+    Best regards,<br>
+    The TranscriptionMaster Team
+  </p>
+</div>

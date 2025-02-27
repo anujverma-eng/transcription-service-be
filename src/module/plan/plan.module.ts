@@ -8,9 +8,11 @@ import {
   Subscription,
   SubscriptionSchema,
 } from "../subscription/subscription.entity";
+import { NotificationModule } from "../notifications/notification.module";
 
 @Module({
   imports: [
+    NotificationModule,
     MongooseModule.forFeature([
       { name: Plan.name, schema: PlanSchema },
       { name: Subscription.name, schema: SubscriptionSchema },

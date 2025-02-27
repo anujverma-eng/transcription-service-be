@@ -1,20 +1,19 @@
 import { Module } from "@nestjs/common";
+import { ConfigModule, ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
-import { UserModule } from "../user/user.module";
+import { MongooseModule } from "@nestjs/mongoose";
+import { PassportModule } from "@nestjs/passport";
+import { JWT_SIGN_IN_OPTIONS } from "src/common/constants/constants";
 import { RefreshTokenModule } from "../refresh-token/refresh-token.module";
 import { SubscriptionModule } from "../subscription/subscription.module";
-import { PassportModule } from "@nestjs/passport";
-import { ConfigModule, ConfigService } from "@nestjs/config";
-import { AuthService } from "./auth.service";
-import { LocalStrategy } from "./strategies/local.strategy";
-import { JwtAccessStrategy } from "./strategies/jwt-access.strategy";
-import { JWT_SIGN_IN_OPTIONS } from "src/common/constants/constants";
+import { UserModule } from "../user/user.module";
 import { AuthController } from "./auth.controller";
-import { PasswordResetSchema } from "./password-reset.entity";
-import { MongooseModule } from "@nestjs/mongoose";
-import { PasswordReset } from "./password-reset.entity";
+import { AuthService } from "./auth.service";
+import { PasswordReset, PasswordResetSchema } from "./password-reset.entity";
 import { PasswordResetService } from "./password-reset.service";
 import { GoogleStrategy } from "./strategies/google.strategy";
+import { JwtAccessStrategy } from "./strategies/jwt-access.strategy";
+import { LocalStrategy } from "./strategies/local.strategy";
 @Module({
   imports: [
     UserModule,
