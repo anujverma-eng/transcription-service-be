@@ -36,7 +36,7 @@ interface ApiResponse<T> {
   pagination?: PaginationData;
 }
 
-interface ResponseData {
+export interface ResponseData {
   data?: any;
   message?: string;
   pagination?: PaginationData;

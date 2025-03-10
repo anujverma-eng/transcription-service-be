@@ -10,11 +10,13 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import { CreateFeedbackDto, UpdateFeedbackDto } from "./feedback.dto";
 import { Feedback } from "./feedback.entity";
+import { UserService } from "../user/user.service";
 
 @Injectable()
 export class FeedbackService {
   constructor(
     @InjectModel(Feedback.name) private feedbackModel: Model<Feedback>,
+    private readonly userService: UserService,
   ) {}
 
   async createFeedback(
@@ -29,10 +31,12 @@ export class FeedbackService {
       );
     }
 
+    const user = await this.userService.findById(userId);
     const newFeedback = new this.feedbackModel({
       userId,
       rating: dto.rating,
       review: dto.review,
+      userName: user.name,
     });
     return newFeedback.save();
   }
@@ -116,6 +120,7 @@ export class FeedbackService {
     // you can limit to 15 if you want, or just rely on the admin to not select more than 15
     return this.feedbackModel
       .find({ adminSelected: true, isDeleted: false })
+      .select("userName rating review")
       .exec();
   }
 }

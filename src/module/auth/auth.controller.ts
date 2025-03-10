@@ -117,7 +117,7 @@ export class AuthController {
   }
 
   @Post("forgot-password")
-  async forgotPassword(@Body() body: { email: string }) {
+  async forgotPassword(@Body() body: { email: string }, @Res() res: Response) {
     const { email } = body;
     const user = await this.userService.findByEmail(email);
 
@@ -133,9 +133,16 @@ export class AuthController {
     const message =
       `[Mock Email] To: ${user.email}\nSubject: Password Reset\n` +
       `Here is your reset token: ${resetToken} (valid 1 hour)\n` +
-      `Or link: http://localhost:3000/api/v1/auth/reset-password?token=${resetToken}`;
+      `Or link: http://localhost:3000/api/v1/auth/reset-password?token=${resetToken}\n` +
+      `Or link: http://localhost:5173/reset-password?token=${resetToken}`;
 
-    return { message, resetToken };
+    console.log(message);
+    // return { message, resetToken };
+
+    return res.redirect(
+      process.env.FRONTEND_URL ||
+        `http://localhost:5173/reset-password?token=${resetToken}`,
+    );
   }
 
   @Post("reset-password")
@@ -218,7 +225,10 @@ export class AuthController {
       setAuthCookies(res, accessToken, refreshToken);
 
       // Redirect to your frontend application instead of Google
-      return res.redirect(process.env.FRONTEND_URL || "http://localhost:3000");
+      return res.redirect(
+        process.env.FRONTEND_URL ||
+          `http://localhost:5173/auth/google/callback`,
+      );
     } catch (error) {
       console.error("Google redirect error:", error);
       // Redirect to frontend with error
@@ -239,7 +249,7 @@ export class AuthController {
     const profile = await this.authService.getProfile(user);
     return {
       message: "User profile",
-      profile,
+      ...profile,
     };
   }
 }

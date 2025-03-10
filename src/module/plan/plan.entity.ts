@@ -10,25 +10,29 @@ export class Plan extends Document {
   @Prop()
   description?: string;
 
-  // For daily usage limit e.g. 5, 200, etc
   @Prop({ default: 5 })
-  dailyLimit: number;
+  totalLimit: number;
 
-  // e.g. price in INR (rupees)
   @Prop({ default: 0 })
   price: number;
 
-  // "INR", "USD", etc.
   @Prop({ default: "INR" })
   currency: string;
 
-  // Is plan currently available for purchase?
   @Prop({ default: true })
   isActive: boolean;
 
-  // If plan is paid or free
   @Prop({ default: false })
   isPaid: boolean;
+
+  @Prop({ unique: true, sparse: true })
+  slug?: string;
+
+  @Prop({ default: 1 })
+  sortOrder?: number;
+
+  @Prop({ type: [String], default: [] })
+  features?: string[];
 }
 
 export const PlanSchema = SchemaFactory.createForClass(Plan);

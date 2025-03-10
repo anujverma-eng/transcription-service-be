@@ -15,10 +15,10 @@ export class User extends Document {
   @Prop({ required: true })
   name: string;
 
-  @Prop()
+  @Prop({ required: false })
   organization?: string;
 
-  @Prop()
+  @Prop({ required: false })
   phoneNumber?: string;
 
   @Prop({ default: UserRole.USER, enum: UserRole })

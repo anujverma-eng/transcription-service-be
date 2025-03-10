@@ -1,3 +1,4 @@
+import { BullModule } from "@nestjs/bull";
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
 import { S3Service } from "../s3/s3.service";
@@ -6,16 +7,15 @@ import {
   SubscriptionSchema,
 } from "../subscription/subscription.entity";
 import { SubscriptionModule } from "../subscription/subscription.module";
+import { TranscriptionErrorModule } from "../transcription-error/transcription-error.module";
+import { TranscriptionProcessor } from "./processors/transcription.processor";
 import { TranscriptionController } from "./transcription-job.controller";
 import {
   TranscriptionJob,
   TranscriptionJobSchema,
 } from "./transcription-job.entity";
 import { TranscriptionJobService } from "./transcription-job.service";
-import { BullModule } from "@nestjs/bull";
 import { TranscriptionPriorityService } from "./transcription-priority.service";
-import { TranscriptionProcessor } from "./processors/transcription.processor";
-import { TranscriptionErrorModule } from "../transcription-error/transcription-error.module";
 
 @Module({
   imports: [

@@ -3,8 +3,13 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import { TranscriptionStatus } from "src/common/utils/enum/util.enum";
 import { SubscriptionService } from "../subscription/subscription.service";
+import {
+  CreateTranscriptionJobDto,
+  SearchJobsDto,
+  UsageStats,
+} from "./transcription-job.dto";
 import { TranscriptionJob } from "./transcription-job.entity";
-import { CreateTranscriptionJobDto } from "./upload-audio.dto";
+import { ResponseData } from "src/interceptors/response.interceptor";
 
 @Injectable()
 export class TranscriptionJobService {
@@ -99,5 +104,93 @@ export class TranscriptionJobService {
   async retryJob(jobId: string): Promise<void> {
     await this.getJob(jobId);
     await this.setStatus(jobId, TranscriptionStatus.RETRYING);
+  }
+
+  async searchJobs(
+    query: SearchJobsDto,
+    userId: string,
+  ): Promise<ResponseData> {
+    const { page, limit, query: searchQuery } = query;
+    const skip = (page - 1) * limit;
+
+    const findQuery: Record<string, any> = {
+      userId: new Types.ObjectId(userId),
+    };
+    if (searchQuery && searchQuery.trim() !== "") {
+      const escapedQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      findQuery.fileName = { $regex: escapedQuery, $options: "i" };
+    }
+
+    const jobs = await this.transcriptionJobModel
+      .find(findQuery)
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const total = await this.transcriptionJobModel.countDocuments(findQuery);
+    const totalPages = Math.ceil(total / limit);
+
+    // const details =
+
+    return {
+      data: jobs,
+      pagination: {
+        total,
+        page: +page,
+        limit: +limit,
+        totalPages,
+      },
+    };
+  }
+
+  async getUsageStats(userId: string): Promise<UsageStats[]> {
+    return await this.transcriptionJobModel.aggregate([
+      {
+        $match: {
+          userId: new Types.ObjectId(userId),
+          // createdAt: {
+          //   $gte: new Date(startDate),
+          //   $lte: new Date(endDate), // Filter by date range if needed
+          // },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+          },
+          totalJobs: { $sum: 1 },
+          completedJobs: {
+            $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
+          },
+          failedJobs: {
+            $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] },
+          },
+          minutesDeducted: {
+            $sum: {
+              $cond: [{ $eq: ["$isDeducted", true] }, "$usageMinutes", 0],
+            },
+          },
+          minutesRefunded: {
+            $sum: {
+              $cond: [{ $eq: ["$isDeducted", false] }, "$usageMinutes", 0],
+            },
+          },
+        },
+      },
+      { $sort: { _id: 1 } }, // Sort by date
+      {
+        $project: {
+          _id: 0,
+          date: "$_id",
+          totalJobs: 1,
+          completedJobs: 1,
+          failedJobs: 1,
+          minutesDeducted: 1,
+          minutesRefunded: 1,
+        },
+      },
+    ]);
   }
 }

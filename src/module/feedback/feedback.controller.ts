@@ -32,7 +32,7 @@ export class FeedbackController {
    * User can post one feedback
    */
 
-  @RolesDecorator(UserRole.USER)
+  @RolesDecorator(UserRole.USER, UserRole.ADMIN)
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Post()
   async createMyFeedback(

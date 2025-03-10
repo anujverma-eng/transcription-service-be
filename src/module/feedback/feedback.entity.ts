@@ -15,6 +15,8 @@ export class Feedback extends Document {
   // unique: true ensures each user can only have one feedback doc
 
   @Prop({ required: true })
+  userName: string;
+  @Prop({ required: true })
   rating: number; // rating out of 5
 
   @Prop({ required: true })

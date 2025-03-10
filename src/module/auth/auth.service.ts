@@ -232,21 +232,20 @@ export class AuthService {
     // const plan = subscription ? await planService.findById(subscription.planId) : null;
 
     return {
-      _id: user._id,
-      email: user.email,
-      name: user.name,
-      organization: user.organization,
-      phoneNumber: user.phoneNumber,
-      role: user.role,
-      lastLogin: user.lastLogin,
-      subscription: subscription
-        ? {
-            planId: subscription.planId,
-            dailyUsedMinutes: subscription.dailyUsedMinutes,
-            startDate: subscription.startDate,
-            endDate: subscription.endDate,
-          }
-        : null,
+      user: {
+        _id: user._id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+      subscription: subscription,
+      // ? {
+      //     planId: subscription.planId,
+      //     totalUsedMinutes: subscription.totalUsedMinutes,
+      //     startDate: subscription.startDate,
+      //     endDate: subscription.endDate,
+      //   }
+      // : null,
     };
   }
 }

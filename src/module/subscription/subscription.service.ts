@@ -70,8 +70,8 @@ export class SubscriptionService {
   ): Promise<Subscription> {
     const sub = await this.createFreSubscriptionIfNotExists(userId.toString());
 
-    const dailyUsedSeconds = Math.round(sub.dailyUsedMinutes * 60 || 0);
-    const dailyLimitInSeconds = sub.dailyLimit * 60;
+    const dailyUsedSeconds = Math.round(sub.totalUsedMinutes * 60 || 0);
+    const dailyLimitInSeconds = sub.totalLimit * 60;
     const wantedToUse = dailyUsedSeconds + fileSeconds;
 
     if (dailyUsedSeconds >= dailyLimitInSeconds) {
@@ -102,7 +102,7 @@ export class SubscriptionService {
       }
       await this.subscriptionModel.updateOne(
         { _id: sub._id },
-        { $inc: { dailyUsedMinutes: minutes } },
+        { $inc: { totalUsedMinutes: minutes } },
       );
     } catch (error) {
       console.error(error);
@@ -126,7 +126,7 @@ export class SubscriptionService {
     }
     await this.subscriptionModel.updateOne(
       { _id: sub._id },
-      { $inc: { dailyUsedMinutes: -minutes } },
+      { $inc: { totalUsedMinutes: -minutes } },
     );
   }
 
@@ -143,7 +143,7 @@ export class SubscriptionService {
     }
     await this.subscriptionModel.updateOne(
       { _id: sub._id },
-      { $set: { dailyUsedMinutes: 0 } },
+      { $set: { totalUsedMinutes: 0 } },
     );
   }
 
@@ -151,7 +151,7 @@ export class SubscriptionService {
   async resetDailyUsageForFreeUsers(): Promise<void> {
     await this.subscriptionModel.updateMany(
       { isPaid: false },
-      { $set: { dailyUsedMinutes: 0 } },
+      { $set: { totalUsedMinutes: 0 } },
     );
   }
 
@@ -173,7 +173,7 @@ export class SubscriptionService {
    * planId is Mandatory
    * If user already have an active subscription, and its paid, remove and add the limitLeft to the new plan.
    * If user has a free subscription, remove it and create a new one with the new plan
-   * If user has a paid subscription, update the planId and dailyLimit
+   * If user has a paid subscription, update the planId and totalLimit
    */
   async upgradeSubscription(
     dto: CreateSubscriptionDto,
@@ -199,7 +199,7 @@ export class SubscriptionService {
     session?: ClientSession,
   ) {
     const plan = await this.planService.getPlanById(planId);
-    let dailyLimit = plan.dailyLimit;
+    let totalLimit = plan.totalLimit;
 
     if (oldSubId) {
       const oldSubIdObject = new Types.ObjectId(oldSubId);
@@ -207,11 +207,11 @@ export class SubscriptionService {
         .findById(oldSubIdObject)
         .session(session);
       if (oldSub && oldSub.isActive) {
-        dailyLimit += oldSub.dailyLimit;
+        totalLimit += oldSub.totalLimit;
         await this.subscriptionModel
           .updateOne(
             { _id: oldSubIdObject },
-            { isActive: false, dailyLimit: 0, endDate: new Date() },
+            { isActive: false, totalLimit: 0, endDate: new Date() },
           )
           .session(session);
       }
@@ -221,9 +221,25 @@ export class SubscriptionService {
     const newSub = await this.subscriptionModel.create({
       ...newSubDto,
       userId: userIdObject.toHexString(),
-      dailyLimit: dailyLimit,
+      totalLimit: totalLimit,
       isPaid: true,
     });
     return newSub;
+  }
+
+  async getCurrentUsage(userId: Types.ObjectId | string) {
+    const sub = await this.getActiveSubscription(userId);
+
+    if (!sub) {
+      throw new BadRequestException(
+        "Subscription not found || Increment Daily Usage Failed",
+      );
+    }
+
+    return {
+      totalLimit: sub.totalLimit,
+      totalUsedMinutes: sub.totalUsedMinutes,
+      remainingMinutes: sub.totalLimit - sub.totalUsedMinutes,
+    };
   }
 }

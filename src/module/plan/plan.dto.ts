@@ -4,6 +4,7 @@ import {
   IsBoolean,
   IsNumber,
   Min,
+  IsArray,
 } from "class-validator";
 import { Transform } from "class-transformer";
 
@@ -16,7 +17,8 @@ export class CreatePlanDto {
   description?: string;
 
   @IsNumber()
-  dailyLimit: number;
+  @Min(0)
+  totalLimit: number;
 
   @IsNumber()
   @Min(0)
@@ -26,8 +28,26 @@ export class CreatePlanDto {
   @IsString()
   currency: string;
 
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
   @IsBoolean()
   isPaid: boolean;
+
+  @IsOptional()
+  @IsString()
+  slug?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  sortOrder?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  features?: string[];
 }
 
 export class UpdatePlanDto {
@@ -41,6 +61,7 @@ export class UpdatePlanDto {
 
   @IsOptional()
   @IsNumber()
+  @Min(0)
   dailyLimit?: number;
 
   @IsOptional()
@@ -60,4 +81,18 @@ export class UpdatePlanDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsString()
+  slug?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  sortOrder?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  features?: string[];
 }

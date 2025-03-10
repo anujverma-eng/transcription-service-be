@@ -12,6 +12,10 @@ import { TranscriptionStatus } from "src/common/utils/enum/util.enum";
 export class CreateTranscriptionJobDto {
   @IsString()
   @IsNotEmpty()
+  fileName: string;
+
+  @IsString()
+  @IsNotEmpty()
   userId: string;
 
   @IsString()
@@ -42,6 +46,14 @@ export class CreateTranscriptionJobDto {
   @IsOptional()
   @IsString()
   durationText?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  sourceLanguage: string;
+
+  @IsString()
+  @IsNotEmpty()
+  transcriptLanguage: string;
 }
 
 export class PresignRequestDto {
@@ -51,8 +63,8 @@ export class PresignRequestDto {
 
   @IsNumber()
   @IsNotEmpty()
-  @Min(60, {
-    message: "Duration must be at least 1 minute",
+  @Min(30, {
+    message: "Duration must be at least 30 seconds",
   })
   duration: number; // in seconds
 
@@ -64,14 +76,26 @@ export class PresignRequestDto {
 export class QueueJobDto {
   @IsString()
   @IsNotEmpty()
+  fileName: string;
+
+  @IsString()
+  @IsNotEmpty()
   audioFileKey: string;
 
   @IsNumber()
   @IsNotEmpty()
-  @Min(60, {
-    message: "Duration must be at least 1 minute",
+  @Min(30, {
+    message: "Duration must be at least 30 seconds",
   })
   duration: number; // in seconds
+
+  @IsString()
+  @IsNotEmpty()
+  sourceLanguage: string;
+
+  @IsString()
+  @IsNotEmpty()
+  transcriptLanguage: string;
 }
 
 // A simple mapping for demonstration purposes.
@@ -89,9 +113,32 @@ export function getS3Key(
 ): string {
   // Check if the fileName already has an extension.
   if (fileName.includes(".")) {
-    return fileName;
+    return `${userId}/audios/${Date.now()}-${fileName}`;
   }
   // If not, look up the extension based on the MIME type.
   const extension = mimeToExtension[mimeType];
   return `${userId}/audios/${Date.now()}-${fileName}${extension}`;
+}
+
+export class SearchJobsDto {
+  @IsString()
+  @IsNotEmpty()
+  page: number;
+
+  @IsString()
+  @IsNotEmpty()
+  limit: number;
+
+  @IsOptional()
+  @IsString()
+  query?: string;
+}
+
+export interface UsageStats {
+  date: string;
+  totalJobs: number;
+  completedJobs: number;
+  failedJobs: number;
+  minutesDeducted: number;
+  minutesRefunded: number;
 }

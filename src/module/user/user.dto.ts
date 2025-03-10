@@ -24,6 +24,7 @@ export class CreateUserDto {
   @IsString({ message: "Name must be a string" })
   name: string;
 
+  @IsOptional()
   @IsNotEmpty({ message: "Phone is required" })
   @IsString({ message: "Phone must be a string" })
   phone: string;

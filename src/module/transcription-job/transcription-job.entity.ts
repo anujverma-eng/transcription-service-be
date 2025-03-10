@@ -8,6 +8,9 @@ export class TranscriptionJob extends Document {
   userId: string;
 
   @Prop({ required: true })
+  fileName: string;
+
+  @Prop({ required: true })
   audioFileKey: string;
 
   @Prop({ default: null })
@@ -33,7 +36,14 @@ export class TranscriptionJob extends Document {
 
   @Prop({ default: true })
   isDeducted: boolean;
+
+  @Prop({ required: true })
+  sourceLanguage: string;
+
+  @Prop({ required: true })
+  transcriptLanguage: string;
 }
 
 export const TranscriptionJobSchema =
   SchemaFactory.createForClass(TranscriptionJob);
+TranscriptionJobSchema.index({ fieldName: "text" });

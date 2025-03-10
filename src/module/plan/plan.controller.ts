@@ -26,8 +26,6 @@ import {
  * Admin-only endpoints for plan management
  */
 @Controller("api/v1/admin/plans")
-@UseGuards(JwtAuthGuard, RoleGuard)
-@RolesDecorator(UserRole.ADMIN)
 export class PlanController {
   constructor(
     private readonly planService: PlanService,
@@ -37,6 +35,8 @@ export class PlanController {
   /**
    * Create a new plan
    */
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @RolesDecorator(UserRole.ADMIN)
   @Post()
   async create(@Body() dto: CreatePlanDto) {
     return this.planService.createPlan(dto);
@@ -45,6 +45,8 @@ export class PlanController {
   /**
    * Get all plans, optionally including inactive
    */
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @RolesDecorator(UserRole.ADMIN)
   @Get()
   async findAll(@Query("includeInactive") includeInactive?: string) {
     const inc = includeInactive === "true";
@@ -54,6 +56,8 @@ export class PlanController {
   /**
    * Get details of a single plan
    */
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @RolesDecorator(UserRole.ADMIN)
   @Get(":id")
   async findOne(@Param("id") id: string) {
     return this.planService.findPlanById(id);
@@ -62,6 +66,8 @@ export class PlanController {
   /**
    * Update partial fields of a plan
    */
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @RolesDecorator(UserRole.ADMIN)
   @Patch(":id")
   async update(@Param("id") id: string, @Body() dto: UpdatePlanDto) {
     return this.planService.updatePlan(id, dto);
@@ -70,6 +76,8 @@ export class PlanController {
   /**
    * Soft-delete a plan => isActive=false
    */
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @RolesDecorator(UserRole.ADMIN)
   @Delete(":id")
   async softDelete(@Param("id") id: string) {
     return this.planService.softDeletePlan(id);
@@ -78,10 +86,10 @@ export class PlanController {
   /**
    * List users who have this plan
    */
-  // @Get(":id/users")
-  // async getUsersForPlan(@Param("id") id: string) {
-  //   return this.planService.getUsersForPlan(id);
-  // }
+  @Get("get/plans")
+  async getPlans() {
+    return this.planService.getPlans();
+  }
 
   @Post("send-notification")
   async sendNotification(@Body() dto: SendNotificationDto) {

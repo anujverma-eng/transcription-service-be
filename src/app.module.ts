@@ -13,6 +13,7 @@ import { UsageResetService } from "./tasks/usage-reset.service";
 import { PlanModule } from "./module/plan/plan.module";
 import { PaymentsModule } from "./module/payments/payments.module";
 import { NotificationModule } from "./module/notifications/notification.module";
+import { FeedbackModule } from "./module/feedback/feedback.module";
 @Module({
   imports: [
     // ScheduleModule.forRoot(),
@@ -25,6 +26,7 @@ import { NotificationModule } from "./module/notifications/notification.module";
     PlanModule,
     PaymentsModule,
     NotificationModule,
+    FeedbackModule,
     BullModule.forRoot({
       redis: {
         host: "localhost",

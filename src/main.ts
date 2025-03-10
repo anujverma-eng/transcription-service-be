@@ -19,7 +19,7 @@ async function bootstrap() {
   app.use(cookieParser());
 
   app.enableCors({
-    origin: "http://localhost:4000", // or '*'
+    origin: "http://localhost:5173", // or '*'
     credentials: true, // allow cookies to be sent
   });
 

@@ -10,10 +10,10 @@ export class Subscription extends Document {
   planId: string; // references Plan model
 
   @Prop({ default: 5 })
-  dailyLimit: number; // Based on the plan
+  totalLimit: number; // Based on the plan
 
   @Prop({ default: 0 })
-  dailyUsedMinutes: number;
+  totalUsedMinutes: number;
 
   @Prop({ default: Date.now })
   startDate: Date;

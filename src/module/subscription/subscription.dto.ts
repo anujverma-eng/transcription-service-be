@@ -21,7 +21,7 @@ export class CreateSubscriptionDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  dailyLimit?: number = 5;
+  totalLimit?: number = 5;
 
   @IsOptional()
   @IsInt()

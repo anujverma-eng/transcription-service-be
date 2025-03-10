@@ -88,12 +88,20 @@ export class PlanService {
       .exec();
     if (!freePlan) {
       const newPlan = new this.planModel({
-        name: "Free",
-        description: "Free testing plan",
-        dailyLimit: 5,
+        name: "Free Plan",
+        slug: "free",
+        description: "A great way to test out AudioLekh for free!",
+        totalLimit: 5,
         price: 0,
         currency: "INR",
+        isActive: true,
         isPaid: false,
+        sortOrder: 1,
+        features: [
+          "5 minutes per day",
+          "Basic Support",
+          "No credit card required",
+        ],
       });
       freePlan = await newPlan.save();
     }
@@ -117,4 +125,8 @@ export class PlanService {
   //     subscriptionId: s._id.toHexString(),
   //   }));
   // }
+
+  async getPlans(): Promise<Plan[]> {
+    return this.planModel.find().lean().exec();
+  }
 }
