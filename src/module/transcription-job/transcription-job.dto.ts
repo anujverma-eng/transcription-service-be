@@ -120,7 +120,7 @@ export function getS3Key(
   return `${userId}/audios/${Date.now()}-${fileName}${extension}`;
 }
 
-export class SearchJobsDto {
+export class SearchWithPaginationDto {
   @IsString()
   @IsNotEmpty()
   page: number;

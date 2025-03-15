@@ -11,6 +11,7 @@ import { Model } from "mongoose";
 import { CreateFeedbackDto, UpdateFeedbackDto } from "./feedback.dto";
 import { Feedback } from "./feedback.entity";
 import { UserService } from "../user/user.service";
+import { SearchWithPaginationDto } from "../transcription-job/transcription-job.dto";
 
 @Injectable()
 export class FeedbackService {
@@ -72,16 +73,29 @@ export class FeedbackService {
     return feedback.save();
   }
 
-  async deleteMyFeedback(userId: string): Promise<Feedback> {
-    const feedback = await this.feedbackModel.findOne({
-      userId,
-      isDeleted: false,
-    });
-    if (!feedback) {
-      throw new NotFoundException("Feedback not found or already deleted.");
-    }
-    feedback.isDeleted = true;
-    return feedback.save();
+  async deleteMyFeedback(userId: string) {
+    return await this.feedbackModel.deleteMany({ userId });
+  }
+
+  async getFeedbacks(query: SearchWithPaginationDto) {
+    const { page, limit } = query;
+    const skip = (page - 1) * limit;
+
+    const feedbacks = await this.feedbackModel
+      .find({ isDeleted: false })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .exec();
+    const total = await this.feedbackModel.countDocuments({ isDeleted: false });
+    return {
+      data: feedbacks,
+      pagination: {
+        page,
+        limit,
+        total,
+      },
+    };
   }
 
   /**

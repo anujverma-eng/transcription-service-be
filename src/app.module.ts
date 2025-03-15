@@ -14,6 +14,7 @@ import { PlanModule } from "./module/plan/plan.module";
 import { PaymentsModule } from "./module/payments/payments.module";
 import { NotificationModule } from "./module/notifications/notification.module";
 import { FeedbackModule } from "./module/feedback/feedback.module";
+import { AdminModule } from "./module/admin/admin.module";
 @Module({
   imports: [
     // ScheduleModule.forRoot(),
@@ -27,6 +28,7 @@ import { FeedbackModule } from "./module/feedback/feedback.module";
     PaymentsModule,
     NotificationModule,
     FeedbackModule,
+    AdminModule,
     BullModule.forRoot({
       redis: {
         host: "localhost",

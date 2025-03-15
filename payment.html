@@ -19,11 +19,11 @@
     // Replace these values with your actual test data:
     const options = {
       key: "rzp_test_pcQeEnWWj8uxOA", // Replace with your Razorpay test Key ID
-      amount: "100000", // Amount in subunits (e.g., 50000 for INR 500.00)
+      amount: "1400", // Amount in subunits (e.g., 50000 for INR 500.00)
       currency: "INR",
       name: "Anuj Verma",
       description: "Test Transaction",
-      order_id: "order_PzrlHaxfkVsQFj", // Replace with the order ID returned by your backend
+      order_id: "order_Q6LQPR65rVRvU0", // Replace with the order ID returned by your backend
       handler: function (response) {
         alert("Payment Successful!\nPayment ID: " + response.razorpay_payment_id);
         console.log("Payment Response:", response);

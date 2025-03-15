@@ -23,7 +23,7 @@ import {
   getS3Key,
   PresignRequestDto,
   QueueJobDto,
-  SearchJobsDto,
+  SearchWithPaginationDto,
 } from "./transcription-job.dto";
 import { TranscriptionPriorityService } from "./transcription-priority.service";
 import { InjectQueue } from "@nestjs/bull";
@@ -199,7 +199,10 @@ export class TranscriptionController {
   @RolesDecorator(UserRole.USER, UserRole.ADMIN)
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Get("/search")
-  async searchJobs(@Req() req: AuthRequest, @Query() query: SearchJobsDto) {
+  async searchJobs(
+    @Req() req: AuthRequest,
+    @Query() query: SearchWithPaginationDto,
+  ) {
     const user = req.user as AuthUser;
     if (!user || !user._id) {
       throw new BadRequestException("User not found in request");

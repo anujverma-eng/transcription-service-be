@@ -139,10 +139,7 @@ export class AuthController {
     console.log(message);
     // return { message, resetToken };
 
-    return res.redirect(
-      process.env.FRONTEND_URL ||
-        `http://localhost:5173/reset-password?token=${resetToken}`,
-    );
+    return res.json({ message: "Password reset token sent" });
   }
 
   @Post("reset-password")

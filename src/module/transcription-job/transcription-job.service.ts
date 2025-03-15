@@ -5,7 +5,7 @@ import { TranscriptionStatus } from "src/common/utils/enum/util.enum";
 import { SubscriptionService } from "../subscription/subscription.service";
 import {
   CreateTranscriptionJobDto,
-  SearchJobsDto,
+  SearchWithPaginationDto,
   UsageStats,
 } from "./transcription-job.dto";
 import { TranscriptionJob } from "./transcription-job.entity";
@@ -107,7 +107,7 @@ export class TranscriptionJobService {
   }
 
   async searchJobs(
-    query: SearchJobsDto,
+    query: SearchWithPaginationDto,
     userId: string,
   ): Promise<ResponseData> {
     const { page, limit, query: searchQuery } = query;

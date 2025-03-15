@@ -1,7 +1,12 @@
 // src/modules/payment/payment.entity.ts
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document } from "mongoose";
-import { PaymentStatus } from "./payments.enum";
+
+export enum PaymentStatus {
+  PAID = "paid",
+  PENDING = "pending",
+  FAILED = "failed",
+}
 
 @Schema({ timestamps: true })
 export class Payment extends Document {

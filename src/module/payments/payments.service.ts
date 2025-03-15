@@ -14,7 +14,7 @@ import { SubscriptionService } from "../subscription/subscription.service";
 import { PaymentStatus } from "./payments.enum";
 import * as crypto from "crypto";
 import { PlanService } from "../plan/plan.service";
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class PaymentsService {
@@ -28,16 +28,20 @@ export class PaymentsService {
     private configService: ConfigService,
   ) {
     this.razorpay = new Razorpay({
-      key_id: this.configService.get<string>('RAZORPAY_KEY_ID'),
-      key_secret: this.configService.get<string>('RAZORPAY_KEY_SECRET'),
+      key_id: this.configService.get<string>("RAZORPAY_KEY_ID"),
+      key_secret: this.configService.get<string>("RAZORPAY_KEY_SECRET"),
     });
   }
 
   private async findPendingPaymentForUserPlan(userId: string, planId: string) {
+    // Add check for orders less than 6 hours old
+    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
+
     return this.paymentModel.findOne({
       userId,
       planId,
       status: PaymentStatus.PENDING,
+      createdAt: { $gt: sixHoursAgo },
     });
   }
 
@@ -47,28 +51,34 @@ export class PaymentsService {
    */
   async initiatePayment(dto: CreatePaymentDto, userId: string) {
     try {
-      // Check for existing pending payment
-      const existing = await this.findPendingPaymentForUserPlan(
+      const isExistingOrder = await this.findPendingPaymentForUserPlan(
         userId,
         dto.planId,
       );
-      if (existing) {
-        // Return existing order info
-        // Because user might have just refreshed or come back
-        return {
-          orderId: existing.razorpayOrderId,
-          amount: existing.amount,
-          currency: "INR",
-          key: this.configService.get('razorpay.keyId'),
-        };
+      if (isExistingOrder) {
+        try {
+          await this.razorpay.orders.fetch(isExistingOrder.razorpayOrderId);
+          return {
+            orderId: isExistingOrder.razorpayOrderId,
+            amount: isExistingOrder.amount,
+            currency: "INR",
+            key: this.configService.get("razorpay.keyId"),
+            isExistingOrder: true,
+          };
+        } catch (error) {
+          await this.paymentModel.findByIdAndUpdate(isExistingOrder._id, {
+            status: PaymentStatus.FAILED,
+            error: "Order expired",
+          });
+        }
       }
 
       const plan = await this.planService.getPlanById(dto.planId);
 
       // 1) Create order in Razorpay
       const paymentOrder = await this.razorpay.orders.create({
-        amount: plan.price, // in paise
-        currency: "INR",
+        amount: plan.price,
+        currency: plan.currency,
         receipt: `sub_${Date.now()}`,
       });
 
@@ -88,6 +98,7 @@ export class PaymentsService {
         amount: paymentOrder.amount,
         currency: paymentOrder.currency,
         key: process.env.RAZORPAY_KEY_ID, // front-end uses this
+        isExistingOrder: false,
       };
     } catch (err) {
       this.logger.error("Failed to initiate Payment", err);
@@ -210,5 +221,9 @@ export class PaymentsService {
     } finally {
       session.endSession();
     }
+  }
+
+  async getPaymentHistory(userId: string) {
+    return await this.paymentModel.find({ userId });
   }
 }
