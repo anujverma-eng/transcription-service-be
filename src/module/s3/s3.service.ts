@@ -21,15 +21,24 @@ export class S3Service {
     this.bucketName =
       this.configService.get<string>("S3_BUCKET_NAME") || "default-bucket-name";
 
-    this.s3Client = new S3Client({
-      region: this.configService.get<string>("AWS_REGION"),
-      credentials: {
-        accessKeyId: this.configService.get<string>("AWS_ACCESS_KEY_ID"),
-        secretAccessKey: this.configService.get<string>(
-          "AWS_SECRET_ACCESS_KEY",
-        ),
-      },
-    });
+    const isProduction =
+      this.configService.get<string>("NODE_ENV") === "production";
+
+    if (isProduction) {
+      this.s3Client = new S3Client({
+        region: this.configService.get<string>("AWS_REGION"),
+      });
+    } else {
+      this.s3Client = new S3Client({
+        region: this.configService.get<string>("AWS_REGION"),
+        credentials: {
+          accessKeyId: this.configService.get<string>("AWS_ACCESS_KEY_ID"),
+          secretAccessKey: this.configService.get<string>(
+            "AWS_SECRET_ACCESS_KEY",
+          ),
+        },
+      });
+    }
   }
 
   async getPresignedPutUrl(key: string, contentType: string) {

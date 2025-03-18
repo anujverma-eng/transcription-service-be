@@ -19,8 +19,8 @@ async function bootstrap() {
   app.use(cookieParser());
 
   app.enableCors({
-    origin: "http://localhost:5173", // or '*'
-    credentials: true, // allow cookies to be sent
+    origin: ["http://localhost:5173","http://localhost:3000", "https://audiolekh.com", "http://audiolekh.com"],
+    credentials: true,
   });
 
   const transcriptionQueue = app.get(getQueueToken("transcription"))
