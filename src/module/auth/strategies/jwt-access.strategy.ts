@@ -17,13 +17,12 @@ export class JwtAccessStrategy extends PassportStrategy(
   ) {
     super({
       jwtFromRequest: cookieExtractor,
-      secretOrKey: configService.get<string>("JWT_ACCESS_TOKEN_SECRET"),
+      secretOrKey: configService.get<string>("JWT_SECRET"),
       ignoreExpiration: false,
     });
   }
 
   async validate(payload: JwtPayload) {
-    // payload => { userId: userId, role: 'user' or 'admin', iat, exp }
     const user = await this.authService.validateJwtPayload(payload);
     if (!user) {
       throw new UnauthorizedException("Invalid token or user not found");

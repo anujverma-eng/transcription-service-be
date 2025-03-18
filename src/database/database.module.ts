@@ -12,4 +12,8 @@ import { MongooseModule } from "@nestjs/mongoose";
     }),
   ],
 })
-export class DatabaseModule {}
+export class DatabaseModule {
+  constructor() {
+    console.log("MongoDB Connected Successfully", process.env.MONGO_URI);
+  }
+}
