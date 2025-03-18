@@ -12,7 +12,7 @@ import { NotificationService } from "./notification.service";
 @Global()
 @Module({
   imports: [
-    // Register the "notifications" queue
+    // Register Bull Queue for Notifications
     BullModule.registerQueue({
       name: "notifications",
       defaultJobOptions: {
@@ -25,35 +25,33 @@ import { NotificationService } from "./notification.service";
         },
       },
     }),
-    // Set up MailerModule
+    // Configure MailerModule for AWS SES
     MailerModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (config: ConfigService) => {
         const transport = {
-          host: config.get<string>("SMTP_HOST"),
-          port: config.get<number>("SMTP_PORT"),
-          secure: config.get<string>("SMTP_SECURE") === "true" ? true : false,
+          host: config.get<string>("SMTP_HOST"), // AWS SES SMTP Host
+          port: config.get<number>("SMTP_PORT"), // 587 for TLS, 465 for SSL
+          secure: config.get<string>("SMTP_SECURE") === "true", // true for port 465, false for 587
           auth: {
-            user: config.get<string>("SMTP_USER"),
-            pass: config.get<string>("SMTP_PASSWORD"),
+            user: config.get<string>("SMTP_USER"), // SES SMTP Username
+            pass: config.get<string>("SMTP_PASSWORD"), // SES SMTP Password
           },
           tls: {
-            rejectUnauthorized: false,
+            rejectUnauthorized: false, // Allow TLS
           },
         };
 
-        // Verify SMTP connection
+        // Verify SES SMTP Connection
         const transporter = nodemailer.createTransport(transport);
-
         await new Promise((resolve, reject) => {
           transporter.verify((err, success) => {
             if (err) {
-              console.log(transport);
-              console.error("SMTP verify error =>", err);
+              console.error("AWS SES SMTP verify error =>", err);
               reject(err);
             } else {
               console.log(
-                "*********** SMTP is ready to accept messages ***********",
+                "*********** AWS SES SMTP is ready to accept messages ***********",
               );
               resolve(success);
             }
@@ -64,15 +62,13 @@ import { NotificationService } from "./notification.service";
           transport,
           defaults: {
             from:
-              config.get<string>("DEFAULT_FROM_EMAIL") || "noreply@example.com",
+              config.get<string>("DEFAULT_FROM_EMAIL") ||
+              "no-reply@audiolekh.com",
           },
           template: {
-            // dir: join(__dirname, "templates"),
-            dir: "/Users/anuj/Documents/untitled folder/transcription-backend/src/module/notifications/templates",
+            dir: join(__dirname, "templates"),
             adapter: new HandlebarsAdapter(),
-            options: {
-              strict: true,
-            },
+            options: { strict: true },
           },
         };
       },
@@ -82,9 +78,4 @@ import { NotificationService } from "./notification.service";
   providers: [NotificationService, NotificationProcessor],
   exports: [NotificationService],
 })
-export class NotificationModule {
-  constructor() {
-    console.log(__dirname);
-    console.log(join(__dirname, "..", "src/module/notifications/templates"));
-  }
-}
+export class NotificationModule {}

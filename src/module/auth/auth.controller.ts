@@ -223,8 +223,7 @@ export class AuthController {
 
       // Redirect to your frontend application instead of Google
       return res.redirect(
-        process.env.FRONTEND_URL ||
-          `http://localhost:5173/auth/google/callback`,
+        `${process.env.FRONTEND_URL || "http://localhost:5173"}/auth/google/callback`,
       );
     } catch (error) {
       console.error("Google redirect error:", error);

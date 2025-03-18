@@ -42,9 +42,8 @@ export class PasswordResetService {
 
     await this.notificationService.sendEmail({
       type: NotificationType.PASSWORD_RESET,
-      to: "hola.amigos.gpt@gmail.com",
-      // to: "anujverma123ok@gmail.com",
-      username: user.email,
+      to: user.email,
+      username: user.name,
       subject: "Password Reset",
       resetLink: `${process.env.FRONTEND_URL || "http://localhost:5173"}/reset-password?token=${token}`,
       expirationTime: expiresAt.toISOString(),

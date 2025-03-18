@@ -15,6 +15,7 @@ import { PaymentsModule } from "./module/payments/payments.module";
 import { NotificationModule } from "./module/notifications/notification.module";
 import { FeedbackModule } from "./module/feedback/feedback.module";
 import { AdminModule } from "./module/admin/admin.module";
+import { ConfigService } from "@nestjs/config";
 @Module({
   imports: [
     // ScheduleModule.forRoot(),
@@ -29,11 +30,14 @@ import { AdminModule } from "./module/admin/admin.module";
     NotificationModule,
     FeedbackModule,
     AdminModule,
-    BullModule.forRoot({
-      redis: {
-        host: "localhost",
-        port: 6379,
-      },
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        redis: {
+          host: configService.get("redis.host"),
+          port: configService.get("redis.port"),
+        },
+      }),
     }),
   ],
   controllers: [AppController],

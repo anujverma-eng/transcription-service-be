@@ -1,4 +1,4 @@
-export const JWT_ACCESS_EXPIRATION_TIME = "1m";
+export const JWT_ACCESS_EXPIRATION_TIME = "3d";
 export const JWT_ISSUER = "transcription-auth";
 export const JWT_REFRESH_EXPIRATION_TIME = "7d";
 

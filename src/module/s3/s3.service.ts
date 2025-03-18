@@ -41,7 +41,7 @@ export class S3Service {
       });
 
       return await getSignedUrl(this.s3Client, command, {
-        expiresIn: 60 * 1, // 1 minute
+        expiresIn: 60 * 60 * 12, // 12 hours
       });
     } catch (error) {
       this.logger.error("Error generating presigned put url", error);
@@ -56,7 +56,7 @@ export class S3Service {
         Key: key,
       });
       const url = await getSignedUrl(this.s3Client, command, {
-        expiresIn: 60 * 5, // 5 minutes
+        expiresIn: 60 * 60 * 12, // 12 hours
       });
       return url;
     } catch (error) {
