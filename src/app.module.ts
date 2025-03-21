@@ -41,6 +41,10 @@ import { ConfigService } from "@nestjs/config";
           redis: {
             host: configService.get<string>("redis.host"),
             port: configService.get<number>("redis.port"),
+            tls: {
+              servername: configService.get<string>("redis.host"),
+              rejectUnauthorized: false,
+            },
           },
           onReady: () => {
             console.log("✅ Bull Redis connection established successfully");

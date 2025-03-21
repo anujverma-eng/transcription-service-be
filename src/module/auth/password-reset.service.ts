@@ -40,14 +40,19 @@ export class PasswordResetService {
 
     const user = await this.userService.findById(userId as string);
 
-    await this.notificationService.sendEmail({
-      type: NotificationType.PASSWORD_RESET,
-      to: user.email,
-      username: user.name,
-      subject: "Password Reset",
-      resetLink: `${process.env.FRONTEND_URL || "http://localhost:5173"}/reset-password?token=${token}`,
-      expirationTime: expiresAt.toISOString(),
-    });
+    console.log("sending email to user", user);
+    try {
+      await this.notificationService.sendEmail({
+        type: NotificationType.PASSWORD_RESET,
+        to: user.email,
+        username: user.name,
+        subject: "Password Reset",
+        resetLink: `${process.env.FRONTEND_URL || "http://localhost:5173"}/reset-password?token=${token}`,
+        expirationTime: expiresAt.toISOString(),
+      });
+    } catch (e) {
+      console.log("error in sendEmail", e);
+    }
 
     return token;
   }
