@@ -10,6 +10,10 @@ export class TranscriptionPriorityService {
     this.redisClient = new Redis({
       host: this.configService.get("redis.host"),
       port: this.configService.get("redis.port"),
+      tls: {
+        servername: this.configService.get("redis.host"),
+        rejectUnauthorized: false,
+      },
     });
 
     this.redisClient.on("connect", () => {
