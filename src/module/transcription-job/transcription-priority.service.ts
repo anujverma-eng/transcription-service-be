@@ -11,7 +11,14 @@ export class TranscriptionPriorityService {
       host: this.configService.get("redis.host"),
       port: this.configService.get("redis.port"),
     });
-    console.log("Redis client connected");
+
+    this.redisClient.on("connect", () => {
+      console.log("✅ TranscriptionPriority Redis client connected");
+    });
+
+    this.redisClient.on("error", (err) => {
+      console.error("❌ TranscriptionPriority Redis connection error:", err);
+    });
   }
 
   /**

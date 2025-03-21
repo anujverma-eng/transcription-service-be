@@ -12,7 +12,21 @@ export class NotificationService {
 
   constructor(
     @InjectQueue("notifications") private readonly notificationQueue: Queue,
-  ) {}
+  ) {
+    console.log("🔄 Initializing Notifications Queue...");
+
+    this.notificationQueue.on("ready", () => {
+      console.log("✅ Notifications Queue is ready and connected");
+    });
+
+    this.notificationQueue.on("error", (error) => {
+      console.error("❌ Notifications Queue error:", error);
+    });
+
+    this.notificationQueue.on("failed", (job, error) => {
+      console.error(`❌ Job ${job.id} failed:`, error);
+    });
+  }
 
   /**
    * Put an email job onto the queue

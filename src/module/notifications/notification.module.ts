@@ -24,6 +24,14 @@ import { NotificationService } from "./notification.service";
           delay: 5000,
         },
       },
+      processors: [
+        {
+          name: "notifications",
+          callback: () => {
+            console.log("✅ Notifications Queue processor initialized");
+          },
+        },
+      ],
     }),
     // Configure MailerModule for AWS SES
     MailerModule.forRootAsync({

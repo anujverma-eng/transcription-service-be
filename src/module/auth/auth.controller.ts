@@ -28,7 +28,7 @@ import {
   CookieRequest,
 } from "./auth.interface";
 import { AuthService } from "./auth.service";
-import { setAuthCookies } from "./auth.utilities";
+import { clearAuthCookies, setAuthCookies } from "./auth.utilities";
 import { PasswordResetService } from "./password-reset.service";
 @Injectable()
 @Controller("/api/v1/auth")
@@ -111,8 +111,7 @@ export class AuthController {
     if (refreshToken) {
       await this.authService.logout(refreshToken, user);
     }
-    res.clearCookie("accessToken");
-    res.clearCookie("refreshToken");
+    clearAuthCookies(res);
     return res.json({ message: "Logout Successfully" });
   }
 

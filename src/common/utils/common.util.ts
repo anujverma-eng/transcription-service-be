@@ -8,6 +8,7 @@ export const callSafe = async <T>(
     return await fn();
   } catch (e) {
     if (logError) new Logger().error(e);
+    console.log("error in callSafe", e);
     return null;
   }
 };

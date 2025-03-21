@@ -24,7 +24,12 @@ async function bootstrap() {
   });
 
   const transcriptionQueue = app.get(getQueueToken("transcription"))
-  const notificationQueue  = app.get(getQueueToken("notifications"))
+  const notificationQueue = app.get(getQueueToken("notifications"))
+
+  console.log('✅ Bull Queues initialized:', {
+    transcription: transcriptionQueue.name,
+    notifications: notificationQueue.name
+  });
 
   const serverAdapter = new ExpressAdapter();
   serverAdapter.setBasePath("/admin/queues/bull-board");

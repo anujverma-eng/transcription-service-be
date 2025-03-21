@@ -32,12 +32,21 @@ import { ConfigService } from "@nestjs/config";
     AdminModule,
     BullModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        redis: {
-          host: configService.get("redis.host"),
-          port: configService.get("redis.port"),
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        console.log("Connecting to Redis for Bull at:", {
+          host: configService.get<string>("redis.host"),
+          port: configService.get<number>("redis.port"),
+        });
+        return {
+          redis: {
+            host: configService.get<string>("redis.host"),
+            port: configService.get<number>("redis.port"),
+          },
+          onReady: () => {
+            console.log("✅ Bull Redis connection established successfully");
+          },
+        };
+      },
     }),
   ],
   controllers: [AppController],

@@ -21,3 +21,21 @@ export const setAuthCookies = (
     maxAge: 7 * 24 * 60_000 * 60, // 7 days
   });
 };
+
+export const clearAuthCookies = (res: Response) => {
+  res.clearCookie("accessToken", {
+    httpOnly: true,
+    sameSite: "none",
+    // sameSite: "strict",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+  });
+
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    sameSite: "none",
+    // sameSite: "strict",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+  });
+};

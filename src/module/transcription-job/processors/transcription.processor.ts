@@ -23,7 +23,21 @@ export class TranscriptionProcessor {
     private readonly subscriptionService: SubscriptionService,
     private readonly transcriptionErrorService: TranscriptionErrorService,
     @InjectQueue("transcription") private readonly transcriptionQueue: Queue,
-  ) {}
+  ) {
+    console.log('🔄 Initializing Transcription Queue...');
+    
+    this.transcriptionQueue.on('ready', () => {
+      console.log('✅ Transcription Queue is ready and connected');
+    });
+
+    this.transcriptionQueue.on('error', (error) => {
+      console.error('❌ Transcription Queue error:', error);
+    });
+
+    this.transcriptionQueue.on('failed', (job, error) => {
+      console.error(`❌ Job ${job.id} failed:`, error);
+    });
+  }
 
   @Process("transcription")
   async handleTranscription(job: Job) {
