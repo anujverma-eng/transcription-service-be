@@ -84,8 +84,8 @@ export class QueueJobDto {
 
   @IsNumber()
   @IsNotEmpty()
-  @Min(30, {
-    message: "Duration must be at least 30 seconds",
+  @Min(10, {
+    message: "Duration must be at least 10 seconds",
   })
   duration: number; // in seconds
 

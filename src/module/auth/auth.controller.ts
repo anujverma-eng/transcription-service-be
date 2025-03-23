@@ -104,14 +104,14 @@ export class AuthController {
   @Post("logout")
   @HttpCode(HttpStatus.OK)
   async logout(@Req() req: CookieRequest, @Res() res: Response) {
-    const user = req.user as AuthUser;
+    // const user = req.user as AuthUser;
 
-    // If you need to identify which refresh token to revoke:
+    clearAuthCookies(res);
+
     const refreshToken = req.cookies["refreshToken"];
     if (refreshToken) {
-      await this.authService.logout(refreshToken, user);
+      await this.authService.logout(refreshToken);
     }
-    clearAuthCookies(res);
     return res.json({ message: "Logout Successfully" });
   }
 

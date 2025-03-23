@@ -160,18 +160,18 @@ export class AuthService {
   /**
    * Logout: revoke the user's current refresh token so it can't be used again.
    */
-  async logout(refreshToken: string, user: AuthUser) {
+  async logout(refreshToken: string) {
     // The user might pass the refresh token from local storage
     // or from an Authorization header, etc.
     if (!refreshToken) {
       throw new UnauthorizedException("No refresh token provided");
     }
-    const tokenDoc =
-      await this.refreshTokenService.findRefreshTokenByToken(refreshToken);
+    // const tokenDoc =
+    //   await this.refreshTokenService.findRefreshTokenByToken(refreshToken);
 
-    if (!tokenDoc || tokenDoc.userId.toString() !== user._id.toString()) {
-      throw new UnauthorizedException("Token does not match user");
-    }
+    // if (!tokenDoc || tokenDoc.userId.toString() !== user._id.toString()) {
+    //   throw new UnauthorizedException("Token does not match user");
+    // }
 
     await this.refreshTokenService.revokeRefreshToken(refreshToken);
 

@@ -97,3 +97,11 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+aws configure
+--> add Access Key
+--> add Access Secret
+aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 677276104280.dkr.ecr.ap-south-1.amazonaws.com
+docker build --platform=linux/amd64 -t audio-lekh-prod:v1.9 .                                   
+docker tag audio-lekh-prod:v1.9 677276104280.dkr.ecr.ap-south-1.amazonaws.com/audiolekh/audiolekh-backend:v1.9
+docker push 677276104280.dkr.ecr.ap-south-1.amazonaws.com/audiolekh/audiolekh-backend:v1.9

@@ -9,13 +9,14 @@ import { SubscriptionModule } from "./module/subscription/subscription.module";
 import { TranscriptionJobModule } from "./module/transcription-job/transcription-job.module";
 // import { ScheduleModule } from "@nestjs/schedule";
 import { BullModule } from "@nestjs/bull";
-import { UsageResetService } from "./tasks/usage-reset.service";
-import { PlanModule } from "./module/plan/plan.module";
-import { PaymentsModule } from "./module/payments/payments.module";
-import { NotificationModule } from "./module/notifications/notification.module";
-import { FeedbackModule } from "./module/feedback/feedback.module";
-import { AdminModule } from "./module/admin/admin.module";
 import { ConfigService } from "@nestjs/config";
+import { AdminModule } from "./module/admin/admin.module";
+import { ContactUsModule } from "./module/contact-us/contact-us.module";
+import { FeedbackModule } from "./module/feedback/feedback.module";
+import { NotificationModule } from "./module/notifications/notification.module";
+import { PaymentsModule } from "./module/payments/payments.module";
+import { PlanModule } from "./module/plan/plan.module";
+import { UsageResetService } from "./tasks/usage-reset.service";
 @Module({
   imports: [
     // ScheduleModule.forRoot(),
@@ -30,6 +31,7 @@ import { ConfigService } from "@nestjs/config";
     NotificationModule,
     FeedbackModule,
     AdminModule,
+    ContactUsModule,
     BullModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {

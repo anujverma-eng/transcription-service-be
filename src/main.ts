@@ -19,7 +19,7 @@ async function bootstrap() {
   app.use(cookieParser());
 
   app.enableCors({
-    origin: ["http://localhost:5173","http://localhost:3000", "https://audiolekh.com", "http://audiolekh.com"],
+    origin: ["http://localhost:5173","http://localhost:3000", "https://audiolekh.com", "http://audiolekh.com", "http://audiolekh-frontend.s3-website.ap-south-1.amazonaws.com"],
     credentials: true,
   });
 
@@ -32,7 +32,7 @@ async function bootstrap() {
   });
 
   const serverAdapter = new ExpressAdapter();
-  serverAdapter.setBasePath("/admin/queues/bull-board");
+  serverAdapter.setBasePath("/admin/bull");
 
   createBullBoard({
     queues: [
@@ -65,7 +65,7 @@ async function bootstrap() {
   };
   
   // Mount Bull Board's router on /admin/queues with admin middleware
-  app.use("/admin/queues/bull-board", adminMiddleware, serverAdapter.getRouter());
+  app.use("/admin/bull", adminMiddleware, serverAdapter.getRouter());
 
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalInterceptors(new ResponseInterceptor());
